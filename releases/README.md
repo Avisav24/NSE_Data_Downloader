@@ -2,10 +2,19 @@
 
 ## Download
 
-**Latest Version**: v2.0  
+**Latest Version**: v2.1 (Enhanced Headless Mode)  
 **File**: `NSE_DataDownloader.exe`  
-**Size**: ~40 MB  
+**Size**: ~56 MB  
 **Platform**: Windows 10/11 (64-bit)
+
+## ✨ What's New in v2.1
+
+- 🎯 **Hidden Browser Mode**: Downloads run completely in the background
+- 📊 **Progress Bar**: Visual feedback showing download stages (10%-100%)
+- 🔄 **Enhanced Reliability**: Improved ChromeDriver error handling with auto-fallback
+- 📁 **Smart File Detection**: Checks multiple locations for downloaded files
+- 🚀 **Better Performance**: Optimized session handling and button detection
+- 🧹 **Cleaner Interface**: Streamlined UI with essential features only
 
 ## Quick Start
 
@@ -39,20 +48,23 @@ If Windows Defender shows a warning:
 
 This is normal for unsigned executables. The software is safe.
 
-## What It Does
+## Features
 
-- Downloads NIFTY 500 data from NSE India
-- Automatic downloads at scheduled times
-- Files saved with timestamps: `NIFTY500_20251001_1015min.csv`
-- Multiple schedule times support
-- Smart download detection and file renaming
+- ✅ **Background Downloads**: Browser runs hidden, no visible window
+- ✅ **Automated Scheduling**: Set multiple daily download times
+- ✅ **Progress Tracking**: Real-time progress bar (7 stages)
+- ✅ **Smart File Naming**: `NIFTY500_YYYYMMDD_HHMMmin.csv`
+- ✅ **Multi-Location Search**: Finds files in configured or default folders
+- ✅ **Duplicate Handling**: Auto-increments filenames if needed
+- ✅ **Error Recovery**: Robust ChromeDriver fallback system
+- ✅ **Session Management**: Reliable NSE connection handling
 
 ## Files Created
 
 On first run, the app creates:
 
-- `config.json` - Your settings
-- `nse_downloader.log` - Activity log
+- `config.json` - Your settings (saved automatically)
+- `nse_downloader.log` - Activity log for troubleshooting
 - `NSE_Data/` - Default download folder (customizable)
 
 ## Usage

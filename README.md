@@ -1,12 +1,16 @@
-# A powerful desktop application to automatically download NIFTY 500 data from NSE India website at scheduled times with automatic file naming, smart download detection, and **hidden browser mode** for background operation.
+# NSE Data Downloader
+
+A powerful desktop application to automatically download NIFTY 500 data from NSE India website at scheduled times with automatic file naming, smart download detection, and **hidden browser mode** for background operation.
 
 ## 📥 Quick Download (No Python Needed!)
 
 **For Windows users**: Download the ready-to-use executable with all latest features!
 
-### � Direct Download Link
+### 🚀 Direct Download Link
 
-�👉 **[Download NSE_DataDownloader.exe](https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_DataDownloader.exe)** (~56 MB)
+👉 **[Download NSE_DataDownloader.exe](https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_DataDownloader.exe)** (~56 MB)
+
+🔗 **Direct URL**: `https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_DataDownloader.exe`
 
 **Alternative**: Browse to [releases folder](releases/) and download from there.
 

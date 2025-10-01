@@ -33,6 +33,7 @@ This is a standalone executable. You don't need Python or any dependencies insta
 ### Windows Defender Warning
 
 If Windows Defender shows a warning:
+
 1. Click "More info"
 2. Click "Run anyway"
 
@@ -49,6 +50,7 @@ This is normal for unsigned executables. The software is safe.
 ## Files Created
 
 On first run, the app creates:
+
 - `config.json` - Your settings
 - `nse_downloader.log` - Activity log
 - `NSE_Data/` - Default download folder (customizable)
@@ -67,19 +69,22 @@ On first run, the app creates:
 ✅ Smart download completion detection  
 ✅ Duplicate file handling  
 ✅ Background operation  
-✅ Comprehensive logging  
+✅ Comprehensive logging
 
 ## Troubleshooting
 
 **Antivirus blocks the file**:
+
 - Add exception for `NSE_DataDownloader.exe`
 - The file is safe, just unsigned
 
 **Chrome not found**:
+
 - Install Google Chrome browser
 - Make sure it's the latest version
 
 **Downloads not working**:
+
 - Check internet connection
 - Verify Chrome is installed
 - Check log file for details

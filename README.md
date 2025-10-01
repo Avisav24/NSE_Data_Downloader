@@ -39,11 +39,13 @@ A powerful desktop application to automatically download NIFTY 500 data from NSE
 ## 📋 Requirements
 
 ### For Executable (Windows)
+
 - Windows 10 or 11 (64-bit)
 - Google Chrome browser installed
 - Internet connection
 
 ### For Python Version
+
 - Python 3.8 or higher
 - Google Chrome browser installed
 - Internet connection

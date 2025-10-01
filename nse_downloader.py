@@ -19,12 +19,14 @@ import requests
 from urllib.parse import urlencode
 
 class NSEDownloader:
-    def __init__(self):
+    def __init__(self, gui=None):
         self.url = "https://www.nseindia.com/market-data/live-equity-market?symbol=NIFTY%20500"
         self.download_path = os.path.join(os.path.expanduser("~"), "Downloads", "NSE_Data")
         self.scheduled_times = ["09:30"]  # Now supports multiple times
         self.is_running = False
         self.config_file = "config.json"
+        self.gui = gui
+        self.headless_mode = True  # Run browser hidden in background
         self.load_config()
         
         # Setup logging
@@ -80,10 +82,22 @@ class NSEDownloader:
     def setup_driver(self):
         """Setup Chrome WebDriver with options"""
         chrome_options = Options()
-        # chrome_options.add_argument('--headless')  # DISABLED - Show browser for debugging
+        
+        # Add headless mode configuration
+        if hasattr(self, 'headless_mode') and self.headless_mode:
+            chrome_options.add_argument('--headless=new')  # New headless mode with download support
+            chrome_options.add_argument('--disable-gpu')
+            chrome_options.add_argument('--no-sandbox')
+            chrome_options.add_argument('--disable-dev-shm-usage')
+            chrome_options.add_argument('--disable-extensions')
+            chrome_options.add_argument('--disable-plugins')
+            chrome_options.add_argument('--disable-blink-features=AutomationControlled')
+            print("Running in headless mode (browser hidden)")
+        else:
+            print("Running in visible mode (browser shown)")
+        
         chrome_options.add_argument('--no-sandbox')
         chrome_options.add_argument('--disable-dev-shm-usage')
-        # chrome_options.add_argument('--disable-blink-features=AutomationControlled')  # DISABLED
         chrome_options.add_argument('--window-size=1920,1080')
         chrome_options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
         # chrome_options.add_argument('--disable-web-security')  # DISABLED
@@ -91,7 +105,9 @@ class NSEDownloader:
         # chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])  # DISABLED
         # chrome_options.add_experimental_option('useAutomationExtension', False)  # DISABLED
         
-        # Set download preferences
+        # Set download preferences - CRITICAL for headless mode
+        # Ensure absolute path
+        self.download_path = os.path.abspath(self.download_path)
         if not os.path.exists(self.download_path):
             os.makedirs(self.download_path)
         
@@ -99,15 +115,38 @@ class NSEDownloader:
             "download.default_directory": self.download_path,
             "download.prompt_for_download": False,
             "download.directory_upgrade": True,
-            "safebrowsing.enabled": True
+            "safebrowsing.enabled": True,
+            "safebrowsing.disable_download_protection": True,
+            "profile.default_content_setting_values.automatic_downloads": 1
         }
         chrome_options.add_experimental_option("prefs", prefs)
         
-        # Use webdriver-manager to handle ChromeDriver automatically
-        service = Service(ChromeDriverManager().install())
-        driver = webdriver.Chrome(service=service, options=chrome_options)
+        # Use webdriver-manager to handle ChromeDriver automatically with fallback
+        try:
+            print("Installing/updating ChromeDriver...")
+            service = Service(ChromeDriverManager().install())
+            driver = webdriver.Chrome(service=service, options=chrome_options)
+            print("ChromeDriver loaded successfully")
+        except Exception as e:
+            # Fallback: try system Chrome driver
+            logging.error(f"ChromeDriver manager failed: {e}")
+            print(f"ChromeDriver error: {e}")
+            print("Trying system ChromeDriver...")
+            try:
+                driver = webdriver.Chrome(options=chrome_options)
+                print("Using system ChromeDriver")
+            except Exception as e2:
+                logging.error(f"System ChromeDriver also failed: {e2}")
+                print(f"System ChromeDriver error: {e2}")
+                raise Exception("Could not initialize ChromeDriver. Please ensure Chrome browser is installed.")
         
         # CRITICAL: Enable downloads in headless mode using CDP
+        # Use both Browser and Page CDP commands for maximum compatibility
+        driver.execute_cdp_cmd("Browser.setDownloadBehavior", {
+            "behavior": "allow",
+            "downloadPath": self.download_path,
+            "eventsEnabled": True
+        })
         driver.execute_cdp_cmd("Page.setDownloadBehavior", {
             "behavior": "allow",
             "downloadPath": self.download_path
@@ -128,15 +167,27 @@ class NSEDownloader:
         """Download the CSV file from NSE website"""
         driver = None
         try:
+            # Update progress: Starting
+            if self.gui:
+                self.gui.update_progress(10, "Starting browser...")
+            
             logging.info(f"Starting download at {datetime.now()}")
             print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Starting download...")
             
             driver = self.setup_driver()
             
+            # Update progress: Browser started
+            if self.gui:
+                self.gui.update_progress(20, "Establishing session...")
+            
             # First, visit NSE homepage to get cookies and establish session
             logging.info("Establishing session with NSE...")
             driver.get("https://www.nseindia.com")
-            time.sleep(5)
+            time.sleep(7)  # Increased wait for reliable session establishment
+            
+            # Update progress: Session established
+            if self.gui:
+                self.gui.update_progress(40, "Navigating to NIFTY 500...")
             
             # Now visit the target page
             logging.info("Navigating to NIFTY 500 page...")
@@ -146,6 +197,10 @@ class NSEDownloader:
             logging.info("Waiting for page to load...")
             time.sleep(10)
             
+            # Update progress: Page loaded
+            if self.gui:
+                self.gui.update_progress(60, "Finding download button...")
+            
             # Execute JavaScript to scroll if needed
             driver.execute_script("window.scrollTo(0, 200);")
             time.sleep(2)
@@ -153,8 +208,9 @@ class NSEDownloader:
             # Wait for and click the download button
             wait = WebDriverWait(driver, 30)
             
-            # Try to find the button using the exact ID first, then fallback to other selectors
+            # Prioritize the exact span element with text verification
             selectors = [
+                (By.XPATH, "//span[@id='dwldcsv' and text()='Download (.csv)']"),  # Most specific
                 (By.ID, "dwldcsv"),  # Exact button ID
                 (By.XPATH, "//span[@id='dwldcsv']"),
                 (By.XPATH, "//*[@id='dwldcsv']"),
@@ -174,29 +230,56 @@ class NSEDownloader:
                     download_button = wait.until(
                         EC.element_to_be_clickable(selector)
                     )
+                    element_html = download_button.get_attribute('outerHTML')
+                    if element_html:
+                        logging.info(f"✅ Found element: {element_html[:100]}")
+                        print(f"✅ Found element: {element_html[:100]}")
                     logging.info(f"Found download button using selector: {by_method} = {selector_value}")
                     break
                 except Exception as e:
                     logging.debug(f"Selector failed: {selector} - {str(e)}")
                     continue
             
+            # Update progress: Button found
+            if self.gui:
+                self.gui.update_progress(70, "Clicking download button...")
+            
             if download_button:
                 # Scroll to element
                 driver.execute_script("arguments[0].scrollIntoView(true);", download_button)
                 time.sleep(1)
                 
-                # Try to click
-                try:
-                    download_button.click()
-                except:
-                    # Try JavaScript click as fallback
-                    driver.execute_script("arguments[0].click();", download_button)
+                # Try multiple click methods with detailed logging
+                click_methods = [
+                    ("Normal click", lambda btn: btn.click()),
+                    ("JavaScript click", lambda btn: driver.execute_script("arguments[0].click();", btn)),
+                    ("Navigate href", lambda btn: driver.get(btn.get_attribute('href')) if btn.get_attribute('href') else None),
+                    ("JavaScript trigger", lambda btn: driver.execute_script("""
+                        var event = new MouseEvent('click', {
+                            view: window,
+                            bubbles: true,
+                            cancelable: true
+                        });
+                        arguments[0].dispatchEvent(event);
+                    """, btn))
+                ]
                 
-                logging.info("Download button clicked successfully")
-                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Download button clicked! Waiting for file...")
-                
-                # Wait longer for download to start (NSE can be slow)
-                time.sleep(5)
+                for method, click_func in click_methods:
+                    try:
+                        click_func(download_button)
+                        logging.info(f"✅ Clicked download button using method: {method}")
+                        print(f"Download button clicked! Waiting for file...")
+                        
+                        # Update progress: Download initiated
+                        if self.gui:
+                            self.gui.update_progress(80, "Waiting for download...")
+                        
+                        # Brief wait to let download start
+                        time.sleep(2)
+                        break
+                    except Exception as e:
+                        logging.warning(f"Click method '{method}' failed: {e}")
+                        continue
                 
                 # Rename the downloaded file with timestamp (will wait for download to complete)
                 success = self.rename_downloaded_file()
@@ -233,43 +316,73 @@ class NSEDownloader:
             wait_count = 0
             latest_file = None
             
+            # Check both configured path and default Downloads folder
+            paths_to_check = [self.download_path]
+            default_downloads = os.path.join(os.path.expanduser("~"), "Downloads")
+            if default_downloads != self.download_path and os.path.exists(default_downloads):
+                paths_to_check.append(default_downloads)
+            
+            print(f"Checking paths: {paths_to_check}")
+            
             while wait_count < max_wait:
+                found_in_path = None
                 # Look for ANY CSV file (including .crdownload for Chrome partial downloads)
-                all_files = os.listdir(self.download_path) if os.path.exists(self.download_path) else []
-                csv_files = [f for f in all_files if f.endswith('.csv') and not f.startswith('NIFTY500_')]
-                downloading_files = [f for f in all_files if f.endswith('.crdownload')]
-                
-                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Wait {wait_count}s: Found {len(csv_files)} CSV, {len(downloading_files)} downloading...")
-                
-                if downloading_files:
-                    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Download in progress: {downloading_files[0]}")
-                
-                if csv_files:
-                    # Get the most recent file
-                    files_with_path = [os.path.join(self.download_path, f) for f in csv_files]
-                    potential_file = max(files_with_path, key=os.path.getctime)
+                for check_path in paths_to_check:
+                    if not os.path.exists(check_path):
+                        continue
+                        
+                    all_files = os.listdir(check_path)
+                    # Look for CSV files (case-insensitive) that aren't already renamed
+                    csv_files = [f for f in all_files 
+                                if f.lower().endswith('.csv') 
+                                and not f.startswith('NIFTY500_')]
+                    downloading = [f for f in all_files if f.endswith('.crdownload') or f.endswith('.tmp')]
                     
-                    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Found CSV: {os.path.basename(potential_file)}")
+                    if wait_count == 0 or wait_count % 10 == 0:  # Log every 10 seconds
+                        print(f"Wait {wait_count}s: Path '{os.path.basename(check_path)}' - Found {len(csv_files)} CSV, {len(downloading)} downloading...")
                     
-                    # Check if file size is stable (download completed)
-                    if os.path.exists(potential_file):
-                        size1 = os.path.getsize(potential_file)
-                        time.sleep(2)
+                    if downloading:
+                        print(f"Download in progress: {downloading[0]}")
+                    
+                    if csv_files:
+                        # Get the most recent file
+                        files_with_path = [os.path.join(check_path, f) for f in csv_files]
+                        potential_file = max(files_with_path, key=os.path.getctime)
+                        found_in_path = check_path
+                        
+                        print(f"Found CSV: {os.path.basename(potential_file)} in {os.path.basename(check_path)}")
+                        
+                        # Check if file size is stable (download completed)
                         if os.path.exists(potential_file):
-                            size2 = os.path.getsize(potential_file)
-                            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] File size check: {size1} -> {size2} bytes")
-                            if size1 == size2 and size1 > 0:
-                                latest_file = potential_file
-                                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] File download complete! Size: {size1} bytes")
-                                break
+                            size1 = os.path.getsize(potential_file)
+                            time.sleep(2)
+                            if os.path.exists(potential_file):
+                                size2 = os.path.getsize(potential_file)
+                                if size1 == size2 and size1 > 0:
+                                    latest_file = potential_file
+                                    print(f"File download complete! Size: {size1} bytes")
+                                    
+                                    # If found in default Downloads, move to configured path
+                                    if found_in_path != self.download_path:
+                                        print(f"Moving file from {os.path.basename(found_in_path)} to {os.path.basename(self.download_path)}")
+                                    break
+                        break
                 
-                time.sleep(2)  # Check every 2 seconds instead of 1
+                if latest_file:
+                    break
+                    
+                time.sleep(2)  # Check every 2 seconds
                 wait_count += 2
             
             if not latest_file:
-                error_msg = f"No new CSV file found after {max_wait} seconds. Check: {self.download_path}"
+                error_msg = f"No new CSV file found after {max_wait} seconds in any location"
                 logging.warning(error_msg)
-                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {error_msg}")
+                print(f"{error_msg}")
+                
+                # Update progress: Failed
+                if self.gui:
+                    self.gui.update_progress(100, "Download failed - no file found")
+                
                 return False
             
             # Create new filename with timestamp (format: HHMMmin)
@@ -295,11 +408,21 @@ class NSEDownloader:
             if os.path.exists(latest_file):
                 os.rename(latest_file, new_filepath)
                 logging.info(f"File renamed from '{original_name}' to '{new_filename}'")
-                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ✅ File saved as: {new_filename}")
+                print(f"✅ File saved as: {new_filename}")
+                
+                # Update progress: Complete
+                if self.gui:
+                    self.gui.update_progress(100, "Download complete!")
+                
                 return True
             else:
                 logging.error(f"File disappeared before rename: {latest_file}")
-                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Error: File disappeared before rename")
+                print(f"Error: File disappeared before rename")
+                
+                # Update progress: Failed
+                if self.gui:
+                    self.gui.update_progress(100, "Download failed - file disappeared")
+                
                 return False
             
         except Exception as e:
@@ -332,7 +455,7 @@ class DownloaderGUI:
         self.root.geometry("650x550")
         self.root.resizable(False, False)
         
-        self.downloader = NSEDownloader()
+        self.downloader = NSEDownloader(gui=self)
         self.scheduler_thread = None
         
         self.create_widgets()
@@ -411,6 +534,23 @@ class DownloaderGUI:
         )
         manual_btn.pack(pady=10)
         
+        # Progress Bar Section
+        progress_frame = ttk.LabelFrame(main_frame, text="Download Progress", padding="10")
+        progress_frame.pack(fill=tk.X, pady=10)
+        
+        self.progress_var = tk.IntVar(value=0)
+        self.progress_bar = ttk.Progressbar(
+            progress_frame,
+            variable=self.progress_var,
+            maximum=100,
+            mode='determinate',
+            length=400
+        )
+        self.progress_bar.pack(pady=5)
+        
+        self.progress_label = ttk.Label(progress_frame, text="Ready", font=("Arial", 9))
+        self.progress_label.pack(pady=2)
+        
         # Status Section
         status_frame = ttk.LabelFrame(main_frame, text="Status", padding="10")
         status_frame.pack(fill=tk.BOTH, expand=True, pady=10)
@@ -435,6 +575,12 @@ class DownloaderGUI:
         folder = filedialog.askdirectory()
         if folder:
             self.path_var.set(folder)
+    
+    def update_progress(self, value, message=""):
+        """Update progress bar and message"""
+        self.progress_var.set(value)
+        self.progress_label.config(text=message)
+        self.root.update_idletasks()
     
     def update_status(self, message=None):
         if message:

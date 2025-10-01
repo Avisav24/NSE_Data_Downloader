@@ -2,21 +2,35 @@
 
 A powerful desktop application to automatically download NIFTY 500 data from NSE India website at scheduled times with automatic file naming and smart download detection.
 
+## 📥 Quick Download (No Python Needed!)
+
+**For Windows users**: Download the ready-to-use executable!
+
+👉 **[Download NSE_DataDownloader.exe](releases/NSE_DataDownloader.exe)** (~40 MB)
+
+- No Python installation required
+- No dependencies to install
+- Just download and run!
+- See [releases/README.md](releases/README.md) for details
+
 ## 🎯 Features
 
 ### Core Features
+
 - **Multiple Schedule Times**: Set multiple download times throughout the day (e.g., `09:30, 12:00, 15:30`)
 - **Scheduled Downloads**: Automatic daily downloads at your configured times
 - **Manual Download**: Download data instantly with a single click
 - **Custom Download Location**: Choose where to save your CSV files
 
 ### Smart Features
+
 - **Automatic File Naming**: Files saved as `NIFTY500_YYYYMMDD_HHMMmin.csv` (e.g., `NIFTY500_20251001_1015min.csv`)
 - **Smart Download Detection**: Waits for download to complete (checks file size stability)
 - **Duplicate Handling**: Auto-increments filename if downloading multiple times in same minute
 - **Session Management**: Bypasses NSE security by establishing proper session
 
 ### User Experience
+
 - **User-Friendly GUI**: Easy-to-use graphical interface
 - **Comprehensive Logging**: All operations logged in `nse_downloader.log`
 - **Background Operation**: Downloads run in headless mode (no visible browser)
@@ -24,6 +38,12 @@ A powerful desktop application to automatically download NIFTY 500 data from NSE
 
 ## 📋 Requirements
 
+### For Executable (Windows)
+- Windows 10 or 11 (64-bit)
+- Google Chrome browser installed
+- Internet connection
+
+### For Python Version
 - Python 3.8 or higher
 - Google Chrome browser installed
 - Internet connection
@@ -31,13 +51,23 @@ A powerful desktop application to automatically download NIFTY 500 data from NSE
 
 ## 🚀 Installation
 
+### Option 1: Download Executable (Recommended for Windows)
+
+1. Download [NSE_DataDownloader.exe](releases/NSE_DataDownloader.exe)
+2. Double-click to run
+3. That's it! No installation needed.
+
+### Option 2: Run from Source (All Platforms)
+
 1. **Clone the Repository**:
+
    ```bash
    git clone https://github.com/Avisav24/NSE_Data_Downloader.git
    cd NSE_Data_Downloader
    ```
 
 2. **Install Python Dependencies**:
+
    ```bash
    pip install -r requirements.txt
    ```
@@ -50,11 +80,13 @@ A powerful desktop application to automatically download NIFTY 500 data from NSE
 ### Quick Start
 
 1. **Run the Application**:
+
    ```bash
    python nse_downloader.py
    ```
 
 2. **Configure Settings**:
+
    - **Download Location**: Click "Browse" to select save location
    - **Schedule Times**: Enter times in 24-hour format
      - Single time: `09:30`
@@ -62,11 +94,13 @@ A powerful desktop application to automatically download NIFTY 500 data from NSE
      - Many times: `09:15, 10:00, 11:00, 12:00, 13:00, 14:00, 15:30`
 
 3. **Start Scheduler**:
+
    - Click "Start Scheduler"
    - Keep window open for scheduled downloads
    - Downloads occur automatically at each configured time
 
 4. **Manual Download**:
+
    - Click "Download Now" for immediate download
 
 5. **Stop Scheduler**:
@@ -75,19 +109,23 @@ A powerful desktop application to automatically download NIFTY 500 data from NSE
 ### Multiple Schedule Times Examples
 
 **Market Hours Coverage**:
+
 ```
 09:30, 12:00, 15:30
 ```
+
 - 9:30 AM: Market open
 - 12:00 PM: Midday
 - 3:30 PM: Market close
 
 **Hourly Monitoring**:
+
 ```
 09:00, 10:00, 11:00, 12:00, 13:00, 14:00, 15:00, 16:00
 ```
 
 **Single Daily Download**:
+
 ```
 15:35
 ```
@@ -95,26 +133,31 @@ A powerful desktop application to automatically download NIFTY 500 data from NSE
 ## 📁 File Naming Convention
 
 ### Format
+
 ```
 NIFTY500_YYYYMMDD_HHMMmin.csv
 ```
 
 ### Components
+
 - **NIFTY500**: Data source identifier
 - **YYYYMMDD**: Date (e.g., 20251001 for October 1, 2025)
 - **HHMM**: Time in 24-hour format (e.g., 1015 for 10:15 AM)
 - **min**: Suffix indicating minutes
 
 ### Examples
-| Download Time | Filename |
-|--------------|----------|
-| 9:30 AM | `NIFTY500_20251001_0930min.csv` |
-| 10:15 AM | `NIFTY500_20251001_1015min.csv` |
-| 2:30 PM | `NIFTY500_20251001_1430min.csv` |
-| 11:45 PM | `NIFTY500_20251001_2345min.csv` |
+
+| Download Time | Filename                        |
+| ------------- | ------------------------------- |
+| 9:30 AM       | `NIFTY500_20251001_0930min.csv` |
+| 10:15 AM      | `NIFTY500_20251001_1015min.csv` |
+| 2:30 PM       | `NIFTY500_20251001_1430min.csv` |
+| 11:45 PM      | `NIFTY500_20251001_2345min.csv` |
 
 ### Duplicate Handling
+
 If downloading multiple times in the same minute:
+
 - First: `NIFTY500_20251001_1015min.csv`
 - Second: `NIFTY500_20251001_1015min_1.csv`
 - Third: `NIFTY500_20251001_1015min_2.csv`
@@ -135,6 +178,7 @@ Settings are automatically saved in `config.json`:
 ## 📊 How It Works
 
 ### Download Process
+
 1. Establishes session with NSE India homepage
 2. Navigates to NIFTY 500 page
 3. Waits for page to load (10 seconds)
@@ -146,20 +190,23 @@ Settings are automatically saved in `config.json`:
 9. Logs success/failure
 
 ### Smart Renaming
+
 - Monitors download folder for new CSV files
 - Waits for file size to stabilize (2-second check)
-- Ignores already-renamed files (starting with "NIFTY500_")
+- Ignores already-renamed files (starting with "NIFTY500\_")
 - Auto-increments if duplicate exists
 
 ## 📝 Logging
 
 All activities are logged in `nse_downloader.log`:
+
 - Download start/completion times
 - Button detection status
 - File rename operations
 - Errors and warnings
 
 Example log:
+
 ```
 2025-10-01 09:30:05 - INFO - Starting download at 2025-10-01 09:30:05
 2025-10-01 09:30:10 - INFO - Establishing session with NSE...
@@ -172,28 +219,33 @@ Example log:
 ## 🔧 Troubleshooting
 
 ### Download Button Not Found
+
 - **Issue**: Website structure may have changed
 - **Solution**: Check `nse_downloader.log` for details
 - **Debug**: Screenshot saved in download folder
 
 ### ChromeDriver Not Compatible
+
 - **Issue**: Chrome browser version mismatch
 - **Solution**: Update Chrome to latest version
 - **Alternative**: Reinstall dependencies
 
 ### Downloads Not Happening at Scheduled Time
+
 - **Issue**: Scheduler not running
-- **Solution**: 
+- **Solution**:
   - Keep application window open
   - Ensure computer is not in sleep mode
   - Check status panel for confirmation
 
 ### DEPRECATED_ENDPOINT Error
+
 - **Issue**: NSE security detection
 - **Solution**: Already handled by session establishment
 - **Technical**: Script visits homepage first to get cookies
 
 ### File Not Renaming
+
 - **Issue**: Download not completing or permissions
 - **Solution**:
   - Verify download folder permissions
@@ -203,6 +255,7 @@ Example log:
 ## 🛡️ Technical Details
 
 ### Anti-Detection Features
+
 - Chrome DevTools Protocol (CDP) commands
 - Proper user agent headers
 - Session cookie establishment
@@ -210,9 +263,11 @@ Example log:
 - JavaScript injection to hide webdriver
 
 ### Button Detection
+
 Primary selector: `By.ID = "dwldcsv"`
 
 Fallback selectors:
+
 - `//span[@id='dwldcsv']`
 - `//*[@id='dwldcsv']`
 - `//span[@id='dwldcsv']/parent::*`
@@ -252,6 +307,7 @@ This tool is for educational and personal use only. Please respect NSE India's t
 ## 📧 Support
 
 For issues or questions:
+
 - Check `nse_downloader.log` for error details
 - Review troubleshooting section above
 - Open an issue on GitHub

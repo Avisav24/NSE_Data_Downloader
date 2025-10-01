@@ -1,4 +1,31 @@
-# NSE Data Downloader
+# A powerful desktop application to automatically download NIFTY 500 data from NSE India website at scheduled times with automatic file naming, smart download detection, and **hidden browser mode** for background operation.
+
+## 📥 Quick Download (No Python Needed!)
+
+**For Windows users**: Download the ready-to-use executable with all latest features!
+
+### � Direct Download Link
+
+�👉 **[Download NSE_DataDownloader.exe](https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_DataDownloader.exe)** (~56 MB)
+
+**Alternative**: Browse to [releases folder](releases/) and download from there.
+
+### ✨ What's New in v2.1
+
+- 🎯 **Hidden Browser Mode**: Downloads run completely in the background (no visible window!)
+- 📊 **Progress Bar**: Visual feedback showing 7 stages of download (10%-100%)
+- 🔄 **Enhanced Reliability**: Improved ChromeDriver error handling with automatic fallback
+- 📁 **Smart File Detection**: Checks multiple locations for downloaded files
+- 🚀 **Better Performance**: Optimized session handling and button detection
+
+### ✨ Why Use the Executable?
+
+- ✅ No Python installation required
+- ✅ No dependencies to install
+- ✅ Just download and double-click to run!
+- ✅ All latest features included
+- ✅ Auto-updates ChromeDriver
+- ✅ Browser runs hidden in background
 
 A powerful desktop application to automatically download NIFTY 500 data from NSE India website at scheduled times with automatic file naming and smart download detection.
 
@@ -44,6 +71,8 @@ Not on Windows? Want to customize? We've got you covered!
 
 ### Core Features
 
+- **Hidden Browser Mode**: Browser runs completely in background - no visible window!
+- **Progress Bar**: Real-time visual feedback with 7-stage progress (10% → 100%)
 - **Multiple Schedule Times**: Set multiple download times throughout the day (e.g., `09:30, 12:00, 15:30`)
 - **Scheduled Downloads**: Automatic daily downloads at your configured times
 - **Manual Download**: Download data instantly with a single click
@@ -53,8 +82,10 @@ Not on Windows? Want to customize? We've got you covered!
 
 - **Automatic File Naming**: Files saved as `NIFTY500_YYYYMMDD_HHMMmin.csv` (e.g., `NIFTY500_20251001_1015min.csv`)
 - **Smart Download Detection**: Waits for download to complete (checks file size stability)
+- **Multi-Location Search**: Automatically checks both configured and default Downloads folders
 - **Duplicate Handling**: Auto-increments filename if downloading multiple times in same minute
 - **Session Management**: Bypasses NSE security by establishing proper session
+- **Error Recovery**: Robust ChromeDriver handling with automatic fallback
 
 ### User Experience
 

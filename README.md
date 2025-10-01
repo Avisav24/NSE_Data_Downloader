@@ -6,12 +6,21 @@ A powerful desktop application to automatically download NIFTY 500 data from NSE
 
 **For Windows users**: Download the ready-to-use executable!
 
-👉 **[Download NSE_DataDownloader.exe](releases/NSE_DataDownloader.exe)** (~40 MB)
+### � Direct Download Link
 
-- No Python installation required
-- No dependencies to install
-- Just download and run!
-- See [releases/README.md](releases/README.md) for details
+�👉 **[Download NSE_DataDownloader.exe](https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_DataDownloader.exe)** (~40 MB)
+
+**Alternative**: Browse to [releases folder](releases/) and download from there.
+
+### ✨ Why Use the Executable?
+
+- ✅ No Python installation required
+- ✅ No dependencies to install
+- ✅ Just download and run!
+- ✅ All features included
+- ✅ Auto-updates ChromeDriver
+
+📖 See [releases/README.md](releases/README.md) for detailed usage instructions.
 
 ## 🎯 Features
 

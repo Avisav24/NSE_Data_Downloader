@@ -10,6 +10,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import json
@@ -102,7 +103,9 @@ class NSEDownloader:
         }
         chrome_options.add_experimental_option("prefs", prefs)
         
-        driver = webdriver.Chrome(options=chrome_options)
+        # Use webdriver-manager to handle ChromeDriver automatically
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=chrome_options)
         
         # Execute CDP commands to hide automation
         driver.execute_cdp_cmd('Network.setUserAgentOverride', {

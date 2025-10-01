@@ -21,7 +21,7 @@ class NSEDownloader:
     def __init__(self):
         self.url = "https://www.nseindia.com/market-data/live-equity-market?symbol=NIFTY%20500"
         self.download_path = os.path.join(os.path.expanduser("~"), "Downloads", "NSE_Data")
-        self.scheduled_time = "09:30"
+        self.scheduled_times = ["09:30"]  # Now supports multiple times
         self.is_running = False
         self.config_file = "config.json"
         self.load_config()
@@ -40,7 +40,12 @@ class NSEDownloader:
                 with open(self.config_file, 'r') as f:
                     config = json.load(f)
                     self.download_path = config.get('download_path', self.download_path)
-                    self.scheduled_time = config.get('scheduled_time', self.scheduled_time)
+                    # Support both old single time and new multiple times
+                    if 'scheduled_times' in config:
+                        self.scheduled_times = config.get('scheduled_times', self.scheduled_times)
+                    elif 'scheduled_time' in config:
+                        # Convert old single time to list
+                        self.scheduled_times = [config.get('scheduled_time', "09:30")]
             except Exception as e:
                 logging.error(f"Error loading config: {e}")
     
@@ -49,7 +54,7 @@ class NSEDownloader:
         try:
             config = {
                 'download_path': self.download_path,
-                'scheduled_time': self.scheduled_time
+                'scheduled_times': self.scheduled_times
             }
             with open(self.config_file, 'w') as f:
                 json.dump(config, f, indent=4)
@@ -176,12 +181,12 @@ class NSEDownloader:
                     driver.execute_script("arguments[0].click();", download_button)
                 
                 logging.info("Download button clicked successfully")
-                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Download completed successfully!")
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Download initiated...")
                 
-                # Wait for download to complete
-                time.sleep(10)
+                # Wait a moment for download to start
+                time.sleep(3)
                 
-                # Rename the downloaded file with timestamp
+                # Rename the downloaded file with timestamp (will wait for download to complete)
                 self.rename_downloaded_file()
             else:
                 # Take screenshot for debugging
@@ -200,28 +205,54 @@ class NSEDownloader:
     def rename_downloaded_file(self):
         """Rename the most recently downloaded CSV file with timestamp"""
         try:
-            # Get the most recently downloaded file in the download directory
-            files = [f for f in os.listdir(self.download_path) if f.endswith('.csv')]
+            # Wait for file to appear and download to complete
+            max_wait = 30  # Maximum wait time in seconds
+            wait_count = 0
+            latest_file = None
             
-            if not files:
-                logging.warning("No CSV file found to rename")
+            while wait_count < max_wait:
+                files = [f for f in os.listdir(self.download_path) if f.endswith('.csv') and not f.startswith('NIFTY500_')]
+                
+                if files:
+                    # Get the most recent file
+                    files_with_path = [os.path.join(self.download_path, f) for f in files]
+                    potential_file = max(files_with_path, key=os.path.getctime)
+                    
+                    # Check if file size is stable (download completed)
+                    if os.path.exists(potential_file):
+                        size1 = os.path.getsize(potential_file)
+                        time.sleep(2)
+                        if os.path.exists(potential_file):
+                            size2 = os.path.getsize(potential_file)
+                            if size1 == size2 and size1 > 0:
+                                latest_file = potential_file
+                                break
+                
+                time.sleep(1)
+                wait_count += 1
+            
+            if not latest_file:
+                logging.warning("No new CSV file found to rename or download did not complete")
                 return
-            
-            # Get the most recent file
-            files_with_path = [os.path.join(self.download_path, f) for f in files]
-            latest_file = max(files_with_path, key=os.path.getctime)
             
             # Create new filename with timestamp (format: HHMMmin)
             now = datetime.now()
             timestamp = now.strftime('%H%M')  # e.g., 1015 for 10:15 AM
             date_str = now.strftime('%Y%m%d')  # e.g., 20251001
             
-            # Get the original file extension
+            # Get the original file name
             original_name = os.path.basename(latest_file)
             
             # Create new filename: NIFTY500_YYYYMMDD_HHMMmin.csv
             new_filename = f"NIFTY500_{date_str}_{timestamp}min.csv"
             new_filepath = os.path.join(self.download_path, new_filename)
+            
+            # If file with same name exists, add a counter
+            counter = 1
+            while os.path.exists(new_filepath):
+                new_filename = f"NIFTY500_{date_str}_{timestamp}min_{counter}.csv"
+                new_filepath = os.path.join(self.download_path, new_filename)
+                counter += 1
             
             # Rename the file
             if os.path.exists(latest_file):
@@ -234,11 +265,14 @@ class NSEDownloader:
             print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Warning: Could not rename file - {str(e)}")
     
     def schedule_download(self):
-        """Schedule the download job"""
+        """Schedule the download job for multiple times"""
         schedule.clear()
-        schedule.every().day.at(self.scheduled_time).do(self.download_data)
-        logging.info(f"Download scheduled for {self.scheduled_time} daily")
-        print(f"Download scheduled for {self.scheduled_time} daily")
+        for time_str in self.scheduled_times:
+            schedule.every().day.at(time_str).do(self.download_data)
+            logging.info(f"Download scheduled for {time_str} daily")
+        
+        times_display = ", ".join(self.scheduled_times)
+        print(f"Download scheduled for {times_display} daily")
     
     def run_scheduler(self):
         """Run the scheduler loop"""
@@ -252,7 +286,7 @@ class DownloaderGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("NSE Data Downloader")
-        self.root.geometry("600x500")
+        self.root.geometry("650x550")
         self.root.resizable(False, False)
         
         self.downloader = NSEDownloader()
@@ -287,18 +321,22 @@ class DownloaderGUI:
         browse_btn.pack(side=tk.LEFT)
         
         # Time Schedule Section
-        time_frame = ttk.LabelFrame(main_frame, text="Schedule Time", padding="10")
+        time_frame = ttk.LabelFrame(main_frame, text="Schedule Times", padding="10")
         time_frame.pack(fill=tk.X, pady=10)
         
-        time_label = ttk.Label(time_frame, text="Download Time (HH:MM):")
-        time_label.pack(side=tk.LEFT, padx=5)
+        time_label = ttk.Label(time_frame, text="Download Times:")
+        time_label.grid(row=0, column=0, padx=5, pady=5, sticky=tk.W)
         
-        self.time_var = tk.StringVar(value=self.downloader.scheduled_time)
-        time_entry = ttk.Entry(time_frame, textvariable=self.time_var, width=10)
-        time_entry.pack(side=tk.LEFT, padx=5)
+        time_info = ttk.Label(time_frame, text="(HH:MM, 24-hour format, separate multiple times with commas)", font=("Arial", 8))
+        time_info.grid(row=0, column=1, padx=5, pady=5, sticky=tk.W)
         
-        time_info = ttk.Label(time_frame, text="(24-hour format)", font=("Arial", 8))
-        time_info.pack(side=tk.LEFT)
+        # Display current times
+        self.time_var = tk.StringVar(value=", ".join(self.downloader.scheduled_times))
+        time_entry = ttk.Entry(time_frame, textvariable=self.time_var, width=40)
+        time_entry.grid(row=1, column=0, columnspan=2, padx=5, pady=5, sticky=tk.EW)
+        
+        example_label = ttk.Label(time_frame, text="Example: 09:30, 12:00, 15:30", font=("Arial", 8), foreground="gray")
+        example_label.grid(row=2, column=0, columnspan=2, padx=5, pady=2, sticky=tk.W)
         
         # Control Buttons
         button_frame = ttk.Frame(main_frame)
@@ -365,7 +403,7 @@ class DownloaderGUI:
     def validate_time(self, time_str):
         """Validate time format HH:MM"""
         try:
-            parts = time_str.split(":")
+            parts = time_str.strip().split(":")
             if len(parts) != 2:
                 return False
             hour, minute = int(parts[0]), int(parts[1])
@@ -373,15 +411,24 @@ class DownloaderGUI:
         except:
             return False
     
+    def validate_times(self, times_str):
+        """Validate multiple times separated by commas"""
+        times = [t.strip() for t in times_str.split(",")]
+        for time_str in times:
+            if not self.validate_time(time_str):
+                return False, time_str
+        return True, times
+    
     def start_scheduler(self):
         # Validate inputs
-        if not self.validate_time(self.time_var.get()):
-            messagebox.showerror("Invalid Time", "Please enter time in HH:MM format (24-hour)")
+        valid, result = self.validate_times(self.time_var.get())
+        if not valid:
+            messagebox.showerror("Invalid Time", f"Invalid time format: '{result}'\nPlease enter times in HH:MM format (24-hour)\nSeparate multiple times with commas")
             return
         
         # Update downloader settings
         self.downloader.download_path = self.path_var.get()
-        self.downloader.scheduled_time = self.time_var.get()
+        self.downloader.scheduled_times = result  # result contains the list of times
         self.downloader.save_config()
         
         # Create download directory if it doesn't exist
@@ -399,7 +446,8 @@ class DownloaderGUI:
         self.start_btn.config(state=tk.DISABLED)
         self.stop_btn.config(state=tk.NORMAL)
         
-        message = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Scheduler started. Download scheduled for {self.downloader.scheduled_time} daily."
+        times_display = ", ".join(self.downloader.scheduled_times)
+        message = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Scheduler started. Downloads scheduled for: {times_display}"
         self.update_status(message)
     
     def stop_scheduler(self):

@@ -4,10 +4,13 @@ A desktop application to automatically download NIFTY 500 data from NSE India we
 
 ## Features
 
-- **Scheduled Downloads**: Set a specific time for daily automatic downloads
+- **Multiple Schedule Times**: Set multiple download times throughout the day (e.g., 09:30, 12:00, 15:30)
+- **Scheduled Downloads**: Automatic daily downloads at your configured times
 - **Manual Download**: Download data instantly with a single click
 - **Custom Download Location**: Choose where to save your CSV files
 - **Automatic File Naming**: Files are saved with timestamp (e.g., NIFTY500_20251001_1015min.csv for 10:15 AM)
+- **Smart Download Detection**: Waits for download to complete before renaming
+- **Duplicate Handling**: Auto-increments filename if downloading multiple times in same minute
 - **User-Friendly GUI**: Easy-to-use graphical interface
 - **Logging**: All operations are logged for tracking
 - **Background Operation**: Downloads run in the background without browser windows
@@ -40,12 +43,14 @@ A desktop application to automatically download NIFTY 500 data from NSE India we
 2. **Configure Settings**:
 
    - **Download Location**: Click "Browse" to select where CSV files will be saved
-   - **Schedule Time**: Enter the time in 24-hour format (e.g., 09:30 for 9:30 AM)
+   - **Schedule Times**: Enter one or more times separated by commas (e.g., `09:30, 12:00, 15:30`)
+   - Use 24-hour format (09:30 for 9:30 AM, 15:30 for 3:30 PM)
 
 3. **Start Scheduled Downloads**:
 
    - Click "Start Scheduler" to activate daily automatic downloads
    - Keep the application window open for scheduled downloads to work
+   - Downloads will occur at each configured time
 
 4. **Manual Download**:
 

@@ -6,8 +6,82 @@ All downloaded CSV files are automatically renamed with a timestamp to help you 
 
 ## Naming Format
 
-```
+````
+# File Naming Convention
+
+## Overview
+
+All downloaded CSV files are automatically renamed with a timestamp to help you organize and identify when the data was downloaded.
+
+## Naming Format
+
+```text
 NIFTY500_YYYYMMDD_HHMMmin.csv
+````
+
+### Components
+
+- **NIFTY500**: Fixed prefix indicating the data source
+- **YYYYMMDD**: Date in format Year-Month-Day
+- **HHMM**: Time in 24-hour format (Hours-Minutes)
+- **min**: Suffix to indicate "minutes"
+- **.csv**: File extension
+
+## Examples
+
+| Download Time | Filename                        |
+| ------------- | ------------------------------- |
+| 9:30 AM       | `NIFTY500_20251001_0930min.csv` |
+| 10:15 AM      | `NIFTY500_20251001_1015min.csv` |
+| 2:30 PM       | `NIFTY500_20251001_1430min.csv` |
+| 11:45 PM      | `NIFTY500_20251001_2345min.csv` |
+
+## How It Works
+
+1. **Download**: The script downloads the CSV file from NSE India website
+2. **Wait**: Waits for the file to appear in the download folder
+3. **Verify**: Checks that the file size is stable (download completed)
+4. **Rename**: Automatically renames it with the timestamp format
+5. **Duplicate Handling**: If a file with the same name exists, adds a counter (e.g., `_1`, `_2`)
+6. **Log**: Records the rename action in the log file
+
+## Enhanced Features
+
+### Smart Download Detection
+
+- Waits up to 30 seconds for the file to appear
+- Verifies file size stability to ensure download is complete
+- Ignores already-renamed files (starting with "NIFTY500\_")
+
+### Duplicate Prevention
+
+If you download multiple times in the same minute, files are named:
+
+- First: `NIFTY500_20251001_1015min.csv`
+- Second: `NIFTY500_20251001_1015min_1.csv`
+- Third: `NIFTY500_20251001_1015min_2.csv`
+
+## Benefits
+
+- ✅ **No Duplicate Confusion**: Each file has a unique name based on download time
+- ✅ **Easy Sorting**: Files are automatically sorted by date and time
+- ✅ **Quick Identification**: Know exactly when the data was downloaded
+- ✅ **Organized Archive**: Build a historical archive of market data
+- ✅ **Automatic Processing**: No manual intervention needed
+
+## Location
+
+Files are saved in your configured download folder (default: `Downloads/NSE_Data`)
+
+## Troubleshooting
+
+If file renaming fails:
+
+- The original file will remain with its default name
+- Check `nse_downloader.log` for error details
+- Ensure you have write permissions in the download folder
+- Verify the download completed (check file size > 0)
+
 ```
 
 ### Components:
@@ -53,3 +127,4 @@ If file renaming fails:
 - The original file will remain with its default name
 - Check `nse_downloader.log` for error details
 - Ensure you have write permissions in the download folder
+```

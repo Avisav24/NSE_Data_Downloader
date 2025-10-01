@@ -80,16 +80,16 @@ class NSEDownloader:
     def setup_driver(self):
         """Setup Chrome WebDriver with options"""
         chrome_options = Options()
-        chrome_options.add_argument('--headless')  # Run in background
+        # chrome_options.add_argument('--headless')  # DISABLED - Show browser for debugging
         chrome_options.add_argument('--no-sandbox')
         chrome_options.add_argument('--disable-dev-shm-usage')
-        chrome_options.add_argument('--disable-blink-features=AutomationControlled')
+        # chrome_options.add_argument('--disable-blink-features=AutomationControlled')  # DISABLED
         chrome_options.add_argument('--window-size=1920,1080')
         chrome_options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
-        chrome_options.add_argument('--disable-web-security')
-        chrome_options.add_argument('--allow-running-insecure-content')
-        chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
-        chrome_options.add_experimental_option('useAutomationExtension', False)
+        # chrome_options.add_argument('--disable-web-security')  # DISABLED
+        # chrome_options.add_argument('--allow-running-insecure-content')  # DISABLED
+        # chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])  # DISABLED
+        # chrome_options.add_experimental_option('useAutomationExtension', False)  # DISABLED
         
         # Set download preferences
         if not os.path.exists(self.download_path):
@@ -107,11 +107,20 @@ class NSEDownloader:
         service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=chrome_options)
         
-        # Execute CDP commands to hide automation
-        driver.execute_cdp_cmd('Network.setUserAgentOverride', {
-            "userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        # CRITICAL: Enable downloads in headless mode using CDP
+        driver.execute_cdp_cmd("Page.setDownloadBehavior", {
+            "behavior": "allow",
+            "downloadPath": self.download_path
         })
-        driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+        
+        # Minimal automation hiding (keeping CDP commands that work)
+        # driver.execute_cdp_cmd('Network.setUserAgentOverride', {  # DISABLED
+        #     "userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        # })
+        # driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")  # DISABLED
+        
+        logging.info(f"Download path set to: {self.download_path}")
+        print(f"Download path: {self.download_path}")
         
         return driver
     

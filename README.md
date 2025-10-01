@@ -22,6 +22,24 @@ A powerful desktop application to automatically download NIFTY 500 data from NSE
 
 📖 See [releases/README.md](releases/README.md) for detailed usage instructions.
 
+---
+
+## 🚀 Multiple Installation Options
+
+Not on Windows? Want to customize? We've got you covered!
+
+| Installation Method | Best For | Platform | Setup Time |
+|-------------------|----------|----------|------------|
+| **[Windows EXE](https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_DataDownloader.exe)** ⭐ Recommended | End users | Windows | 1 min |
+| **[Python Script](#option-2-install-from-source)** | Developers, Mac/Linux users | All | 5 min |
+| **[Docker Container](INSTALLATION_GUIDE.md#-method-4-docker-container-for-advanced-users)** | Servers, automation | All | 10 min |
+| **[GitHub Codespaces](INSTALLATION_GUIDE.md#-method-5-onlinecloud-solutions)** | Cloud, testing | Browser | 2 min |
+| **[Build Your Own](BUILD_INSTRUCTIONS.md)** | Customization | All | 15 min |
+
+📚 **Detailed Installation Guide**: See [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md) for step-by-step instructions
+
+---
+
 ## 🎯 Features
 
 ### Core Features

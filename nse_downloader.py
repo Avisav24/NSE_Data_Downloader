@@ -193,13 +193,21 @@ class NSEDownloader:
                     driver.execute_script("arguments[0].click();", download_button)
                 
                 logging.info("Download button clicked successfully")
-                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Download initiated...")
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Download button clicked! Waiting for file...")
                 
-                # Wait a moment for download to start
-                time.sleep(3)
+                # Wait longer for download to start (NSE can be slow)
+                time.sleep(5)
                 
                 # Rename the downloaded file with timestamp (will wait for download to complete)
-                self.rename_downloaded_file()
+                success = self.rename_downloaded_file()
+                
+                if success:
+                    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Download completed successfully!")
+                else:
+                    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Download may have failed - check the folder manually")
+                
+                # Keep browser open for a moment so you can see what happened
+                time.sleep(3)
             else:
                 # Take screenshot for debugging
                 screenshot_path = os.path.join(self.download_path, f"debug_screenshot_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
@@ -217,18 +225,31 @@ class NSEDownloader:
     def rename_downloaded_file(self):
         """Rename the most recently downloaded CSV file with timestamp"""
         try:
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Looking for downloaded file in: {self.download_path}")
+            logging.info(f"Searching for downloaded file in: {self.download_path}")
+            
             # Wait for file to appear and download to complete
-            max_wait = 30  # Maximum wait time in seconds
+            max_wait = 60  # Increased to 60 seconds
             wait_count = 0
             latest_file = None
             
             while wait_count < max_wait:
-                files = [f for f in os.listdir(self.download_path) if f.endswith('.csv') and not f.startswith('NIFTY500_')]
+                # Look for ANY CSV file (including .crdownload for Chrome partial downloads)
+                all_files = os.listdir(self.download_path) if os.path.exists(self.download_path) else []
+                csv_files = [f for f in all_files if f.endswith('.csv') and not f.startswith('NIFTY500_')]
+                downloading_files = [f for f in all_files if f.endswith('.crdownload')]
                 
-                if files:
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Wait {wait_count}s: Found {len(csv_files)} CSV, {len(downloading_files)} downloading...")
+                
+                if downloading_files:
+                    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Download in progress: {downloading_files[0]}")
+                
+                if csv_files:
                     # Get the most recent file
-                    files_with_path = [os.path.join(self.download_path, f) for f in files]
+                    files_with_path = [os.path.join(self.download_path, f) for f in csv_files]
                     potential_file = max(files_with_path, key=os.path.getctime)
+                    
+                    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Found CSV: {os.path.basename(potential_file)}")
                     
                     # Check if file size is stable (download completed)
                     if os.path.exists(potential_file):
@@ -236,16 +257,20 @@ class NSEDownloader:
                         time.sleep(2)
                         if os.path.exists(potential_file):
                             size2 = os.path.getsize(potential_file)
+                            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] File size check: {size1} -> {size2} bytes")
                             if size1 == size2 and size1 > 0:
                                 latest_file = potential_file
+                                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] File download complete! Size: {size1} bytes")
                                 break
                 
-                time.sleep(1)
-                wait_count += 1
+                time.sleep(2)  # Check every 2 seconds instead of 1
+                wait_count += 2
             
             if not latest_file:
-                logging.warning("No new CSV file found to rename or download did not complete")
-                return
+                error_msg = f"No new CSV file found after {max_wait} seconds. Check: {self.download_path}"
+                logging.warning(error_msg)
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {error_msg}")
+                return False
             
             # Create new filename with timestamp (format: HHMMmin)
             now = datetime.now()
@@ -270,11 +295,17 @@ class NSEDownloader:
             if os.path.exists(latest_file):
                 os.rename(latest_file, new_filepath)
                 logging.info(f"File renamed from '{original_name}' to '{new_filename}'")
-                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] File saved as: {new_filename}")
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ✅ File saved as: {new_filename}")
+                return True
+            else:
+                logging.error(f"File disappeared before rename: {latest_file}")
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Error: File disappeared before rename")
+                return False
             
         except Exception as e:
             logging.error(f"Error renaming file: {str(e)}")
-            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Warning: Could not rename file - {str(e)}")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ❌ Error: Could not rename file - {str(e)}")
+            return False
     
     def schedule_download(self):
         """Schedule the download job for multiple times"""

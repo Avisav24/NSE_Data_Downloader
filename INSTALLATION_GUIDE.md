@@ -12,7 +12,6 @@ There are **4 different ways** to use NSE Data Downloader. Choose the method tha
 
 1. **Download the executable**:
    - [Direct Download Link](https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_DataDownloader.exe)
-   
 2. **Double-click to run**: `NSE_DataDownloader.exe`
 
 3. **First-time setup**: Windows may show a security warning
@@ -20,12 +19,14 @@ There are **4 different ways** to use NSE Data Downloader. Choose the method tha
    - This is normal for unsigned executables
 
 ### Requirements
+
 - ✅ Windows 10/11 (64-bit)
 - ✅ Google Chrome installed
 - ❌ NO Python needed
 - ❌ NO installation needed
 
 ### Pros & Cons
+
 ✅ **Pros**: Easiest, no setup, just download and run  
 ❌ **Cons**: Larger file size (~40 MB), Windows only
 
@@ -38,22 +39,26 @@ There are **4 different ways** to use NSE Data Downloader. Choose the method tha
 ### Installation Steps
 
 1. **Install Python** (if not already installed):
+
    - Download from [python.org](https://www.python.org/downloads/)
    - Version 3.8 or higher required
    - During installation, check "Add Python to PATH"
 
 2. **Download the repository**:
+
    ```bash
    git clone https://github.com/Avisav24/NSE_Data_Downloader.git
    cd NSE_Data_Downloader
    ```
-   
+
    **OR** download ZIP:
+
    - Go to: https://github.com/Avisav24/NSE_Data_Downloader
    - Click "Code" → "Download ZIP"
    - Extract the ZIP file
 
 3. **Install dependencies**:
+
    ```bash
    pip install -r requirements.txt
    ```
@@ -64,11 +69,13 @@ There are **4 different ways** to use NSE Data Downloader. Choose the method tha
    ```
 
 ### Requirements
+
 - Python 3.8+
 - Google Chrome browser
 - Dependencies: selenium, schedule, webdriver-manager, requests
 
 ### Pros & Cons
+
 ✅ **Pros**: Cross-platform (Windows/Mac/Linux), smaller download, can modify code  
 ✅ **Pros**: Always get latest features, can customize  
 ❌ **Cons**: Requires Python installation, more setup steps
@@ -86,6 +93,7 @@ pip install nse-data-downloader
 ```
 
 Then run from anywhere:
+
 ```bash
 nse-downloader
 ```
@@ -144,6 +152,7 @@ docker run -it -v $(pwd)/downloads:/app/data nse-downloader
 ```
 
 ### Pros & Cons
+
 ✅ **Pros**: Isolated environment, runs on any OS with Docker, server-friendly  
 ✅ **Pros**: Easy to deploy on cloud servers  
 ❌ **Cons**: Requires Docker knowledge, more complex setup
@@ -213,35 +222,39 @@ pyinstaller --onefile --name "nse_downloader" nse_downloader.py
 
 ## 📊 Comparison Table
 
-| Method | Ease of Use | Setup Time | Platform | Size | Best For |
-|--------|-------------|------------|----------|------|----------|
-| **Windows EXE** | ⭐⭐⭐⭐⭐ | 1 min | Windows | 40 MB | End users |
-| **Python Script** | ⭐⭐⭐⭐ | 5-10 min | All | <1 MB | Developers |
-| **Docker** | ⭐⭐⭐ | 10-15 min | All | ~500 MB | Servers |
-| **Codespaces** | ⭐⭐⭐⭐ | 2-3 min | Browser | N/A | Testing |
-| **Build Own** | ⭐⭐ | 15-20 min | All | Varies | Customization |
+| Method            | Ease of Use | Setup Time | Platform | Size    | Best For      |
+| ----------------- | ----------- | ---------- | -------- | ------- | ------------- |
+| **Windows EXE**   | ⭐⭐⭐⭐⭐  | 1 min      | Windows  | 40 MB   | End users     |
+| **Python Script** | ⭐⭐⭐⭐    | 5-10 min   | All      | <1 MB   | Developers    |
+| **Docker**        | ⭐⭐⭐      | 10-15 min  | All      | ~500 MB | Servers       |
+| **Codespaces**    | ⭐⭐⭐⭐    | 2-3 min    | Browser  | N/A     | Testing       |
+| **Build Own**     | ⭐⭐        | 15-20 min  | All      | Varies  | Customization |
 
 ---
 
 ## 🎯 Quick Decision Guide
 
 **Choose Windows EXE if**:
+
 - You just want it to work
 - You're on Windows
 - You don't have Python installed
 
 **Choose Python Script if**:
+
 - You're comfortable with command line
 - You want to modify the code
 - You're on Mac/Linux
 - You want the latest updates
 
 **Choose Docker if**:
+
 - You're running on a server
 - You need isolation
 - You're automating in production
 
 **Choose Build Your Own if**:
+
 - You want to customize
 - You need a different platform
 - You want to learn the build process
@@ -251,21 +264,27 @@ pyinstaller --onefile --name "nse_downloader" nse_downloader.py
 ## ❓ Common Questions
 
 ### Q: Which method is fastest to get started?
+
 **A**: Windows EXE - just download and run!
 
 ### Q: Which method is best for learning?
+
 **A**: Python Script - you can see and modify the code
 
 ### Q: Can I use this on Mac or Linux?
+
 **A**: Yes! Use Python Script or Docker method
 
 ### Q: Which method gets updates first?
+
 **A**: Python Script (just `git pull` to update)
 
 ### Q: Can I run this on a server without a GUI?
+
 **A**: Yes! The app runs in headless mode (no visible browser)
 
 ### Q: Do I need to keep the terminal open?
+
 **A**: Only for Python Script method. EXE runs as a standalone app.
 
 ---

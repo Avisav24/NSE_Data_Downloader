@@ -1,6 +1,6 @@
 # NSE Data Downloader
 
-A powerful desktop application to automatically download NIFTY 500 data from NSE India website at scheduled times with automatic file naming, smart download detection, and **hidden browser mode** for background operation.
+A powerful desktop application to automatically download **NIFTY 500** and **Market Indices** data from NSE India website at scheduled times with automatic file naming, smart download detection, **hidden browser mode** for background operation, and **weekend-aware scheduling**.
 
 ## 📥 Quick Download (No Python Needed!)
 
@@ -8,48 +8,33 @@ A powerful desktop application to automatically download NIFTY 500 data from NSE
 
 ### 🚀 Direct Download Link
 
-👉 **[Download NSE_DataDownloader.exe](https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_DataDownloader.exe)** (~56 MB)
+👉 **[Download NSE_DataDownloader.exe](https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_DataDownloader.exe)** (~54 MB)
 
 🔗 **Direct URL**: `https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_DataDownloader.exe`
 
 **Alternative**: Browse to [releases folder](releases/) and download from there.
 
-### ✨ What's New in v2.1
+### ✨ What's New in v3.0 (Latest)
 
-- 🎯 **Hidden Browser Mode**: Downloads run completely in the background (no visible window!)
-- 📊 **Progress Bar**: Visual feedback showing 7 stages of download (10%-100%)
-- 🔄 **Enhanced Reliability**: Improved ChromeDriver error handling with automatic fallback
-- 📁 **Smart File Detection**: Checks multiple locations for downloaded files
-- 🚀 **Better Performance**: Optimized session handling and button detection
+- 📊 **Dual-Source Downloads**: Download from both NIFTY 500 and Market Indices simultaneously!
+- 🗓️ **Weekend Detection**: Automatically skips downloads on Saturday & Sunday (market closed)
+- � **Separate Folders**: Each data source saves to its own folder
+- 🏷️ **Enhanced File Naming**: New format `NIFTY500_ddmmyy-hhmmmin.csv` (e.g., `NIFTY500_031025-1425min.csv`)
+- 🎨 **Compact GUI**: Redesigned interface (680×450px) with wider path fields
+- � **28 Progress Stages**: Detailed progress from "Configuring" to "Downloading" with percentages
+- �️ **Startup Ready**: Perfect for Windows startup apps with smart weekend handling
+- ⚡ **Faster Downloads**: CDP download path control for each source
 
 ### ✨ Why Use the Executable?
 
 - ✅ No Python installation required
 - ✅ No dependencies to install
 - ✅ Just download and double-click to run!
-- ✅ All latest features included
+- ✅ Download from TWO NSE sources automatically
+- ✅ Weekend-aware scheduling (Mon-Fri only)
 - ✅ Auto-updates ChromeDriver
 - ✅ Browser runs hidden in background
-
-A powerful desktop application to automatically download NIFTY 500 data from NSE India website at scheduled times with automatic file naming and smart download detection.
-
-## 📥 Quick Download (No Python Needed!)
-
-**For Windows users**: Download the ready-to-use executable!
-
-### � Direct Download Link
-
-�👉 **[Download NSE_DataDownloader.exe](https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_DataDownloader.exe)** (~40 MB)
-
-**Alternative**: Browse to [releases folder](releases/) and download from there.
-
-### ✨ Why Use the Executable?
-
-- ✅ No Python installation required
-- ✅ No dependencies to install
-- ✅ Just download and run!
-- ✅ All features included
-- ✅ Auto-updates ChromeDriver
+- ✅ Perfect for Windows startup apps
 
 📖 See [releases/README.md](releases/README.md) for detailed usage instructions.
 
@@ -61,13 +46,8 @@ Not on Windows? Want to customize? We've got you covered!
 
 | Installation Method                                                                                                        | Best For                    | Platform | Setup Time |
 | -------------------------------------------------------------------------------------------------------------------------- | --------------------------- | -------- | ---------- |
-| **[Windows EXE](https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_DataDownloader.exe)** ⭐ Recommended | End users                   | Windows  | 1 min      |
+| **[Windows EXE](https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_DataDownloader.exe)** ⭐ Recommended | End users, Startup apps     | Windows  | 1 min      |
 | **[Python Script](#option-2-install-from-source)**                                                                         | Developers, Mac/Linux users | All      | 5 min      |
-| **[Docker Container](INSTALLATION_GUIDE.md#-method-4-docker-container-for-advanced-users)**                                | Servers, automation         | All      | 10 min     |
-| **[GitHub Codespaces](INSTALLATION_GUIDE.md#-method-5-onlinecloud-solutions)**                                             | Cloud, testing              | Browser  | 2 min      |
-| **[Build Your Own](BUILD_INSTRUCTIONS.md)**                                                                                | Customization               | All      | 15 min     |
-
-📚 **Detailed Installation Guide**: See [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md) for step-by-step instructions
 
 ---
 
@@ -75,28 +55,39 @@ Not on Windows? Want to customize? We've got you covered!
 
 ### Core Features
 
+- **Dual-Source Downloads**: Simultaneously download from NIFTY 500 AND Market Indices pages!
+- **Weekend-Aware Scheduling**: Automatically skips Saturday & Sunday (market closed days)
+- **Separate Download Folders**: Each source saves to its own directory
+  - `NSE_Data/NIFTY500/` for NIFTY 500 data
+  - `NSE_Data/Market_Indices/` for Market Indices data
 - **Hidden Browser Mode**: Browser runs completely in background - no visible window!
-- **Progress Bar**: Real-time visual feedback with 7-stage progress (10% → 100%)
+- **28-Stage Progress Bar**: Detailed real-time feedback from "Configuring" to "Complete!"
 - **Multiple Schedule Times**: Set multiple download times throughout the day (e.g., `09:30, 12:00, 15:30`)
-- **Scheduled Downloads**: Automatic daily downloads at your configured times
-- **Manual Download**: Download data instantly with a single click
-- **Custom Download Location**: Choose where to save your CSV files
+- **Scheduled Downloads**: Automatic daily downloads at your configured times (Monday-Friday only)
+- **Manual Download**: Download data instantly any day with a single click
+- **Custom Download Locations**: Choose separate paths for each data source
 
 ### Smart Features
 
-- **Automatic File Naming**: Files saved as `NIFTY500_YYYYMMDD_HHMMmin.csv` (e.g., `NIFTY500_20251001_1015min.csv`)
+- **Enhanced File Naming**: New format `{source}_ddmmyy-hhmmmin.csv`
+  - Example: `NIFTY500_031025-1425min.csv` (Oct 3, 2025 at 2:25 PM)
+  - Example: `MarketIndices_031025-1425min.csv`
 - **Smart Download Detection**: Waits for download to complete (checks file size stability)
 - **Multi-Location Search**: Automatically checks both configured and default Downloads folders
 - **Duplicate Handling**: Auto-increments filename if downloading multiple times in same minute
-- **Session Management**: Bypasses NSE security by establishing proper session
+- **Session Management**: Bypasses NSE security by establishing proper session for each source
 - **Error Recovery**: Robust ChromeDriver handling with automatic fallback
+- **CDP Download Control**: Dynamically sets download path for each source
 
 ### User Experience
 
-- **User-Friendly GUI**: Easy-to-use graphical interface
+- **Compact GUI (680×450px)**: Efficient use of screen space
+- **Wide Path Fields**: View full file paths (48 characters)
+- **Progress Percentage Display**: Shows `[37%] Button clicked! Initiating download...`
 - **Comprehensive Logging**: All operations logged in `nse_downloader.log`
 - **Background Operation**: Downloads run in headless mode (no visible browser)
-- **Backward Compatible**: Old configurations automatically updated
+- **Startup App Ready**: Perfect for Windows startup with weekend auto-skip
+- **User-Friendly Interface**: Easy-to-use graphical interface with clear labels
 
 ## 📋 Requirements
 
@@ -151,21 +142,28 @@ Not on Windows? Want to customize? We've got you covered!
 
 2. **Configure Settings**:
 
-   - **Download Location**: Click "Browse" to select save location
+   - **Download Locations**: Click "Browse" for each source to select save locations
+     - NIFTY 500 folder (e.g., `C:\Users\YourName\Downloads\NSE_Data\NIFTY500`)
+     - Market Indices folder (e.g., `C:\Users\YourName\Downloads\NSE_Data\Market_Indices`)
    - **Schedule Times**: Enter times in 24-hour format
      - Single time: `09:30`
      - Multiple times: `09:30, 12:00, 15:30`
      - Many times: `09:15, 10:00, 11:00, 12:00, 13:00, 14:00, 15:30`
+     - **Note**: Scheduled downloads only run Monday-Friday (weekends auto-skipped)
 
 3. **Start Scheduler**:
 
    - Click "Start Scheduler"
    - Keep window open for scheduled downloads
-   - Downloads occur automatically at each configured time
+   - Downloads occur automatically at each configured time (Monday-Friday only)
+   - If started on weekend, you'll see a notification that market is closed
+   - Weekend downloads are automatically skipped
 
 4. **Manual Download**:
 
-   - Click "Download Now" for immediate download
+   - Click "Download Now" for immediate download from BOTH sources
+   - Works any day (including weekends)
+   - Downloads NIFTY 500 and Market Indices simultaneously
 
 5. **Stop Scheduler**:
    - Click "Stop Scheduler" to stop automatic downloads
@@ -198,33 +196,35 @@ Not on Windows? Want to customize? We've got you covered!
 
 ### Format
 
-```
-NIFTY500_YYYYMMDD_HHMMmin.csv
+```text
+{SOURCE}_ddmmyy-hhmmmin.csv
 ```
 
 ### Components
 
-- **NIFTY500**: Data source identifier
-- **YYYYMMDD**: Date (e.g., 20251001 for October 1, 2025)
-- **HHMM**: Time in 24-hour format (e.g., 1015 for 10:15 AM)
+- **{SOURCE}**: Data source identifier
+  - `NIFTY500` for NIFTY 500 data
+  - `MarketIndices` for Market Indices data
+- **ddmmyy**: Date (e.g., 031025 for October 3, 2025)
+- **hhmm**: Time in 24-hour format (e.g., 1425 for 2:25 PM)
 - **min**: Suffix indicating minutes
 
 ### Examples
 
-| Download Time | Filename                        |
-| ------------- | ------------------------------- |
-| 9:30 AM       | `NIFTY500_20251001_0930min.csv` |
-| 10:15 AM      | `NIFTY500_20251001_1015min.csv` |
-| 2:30 PM       | `NIFTY500_20251001_1430min.csv` |
-| 11:45 PM      | `NIFTY500_20251001_2345min.csv` |
+| Download Time | NIFTY 500 Filename              | Market Indices Filename              |
+| ------------- | ------------------------------- | ------------------------------------ |
+| 9:30 AM       | `NIFTY500_031025-0930min.csv`   | `MarketIndices_031025-0930min.csv`   |
+| 10:15 AM      | `NIFTY500_031025-1015min.csv`   | `MarketIndices_031025-1015min.csv`   |
+| 2:30 PM       | `NIFTY500_031025-1430min.csv`   | `MarketIndices_031025-1430min.csv`   |
+| 11:45 PM      | `NIFTY500_031025-2345min.csv`   | `MarketIndices_031025-2345min.csv`   |
 
 ### Duplicate Handling
 
 If downloading multiple times in the same minute:
 
-- First: `NIFTY500_20251001_1015min.csv`
-- Second: `NIFTY500_20251001_1015min_1.csv`
-- Third: `NIFTY500_20251001_1015min_2.csv`
+- First: `NIFTY500_031025-1015min.csv`
+- Second: `NIFTY500_031025-1015min_1.csv`
+- Third: `NIFTY500_031025-1015min_2.csv`
 
 ## ⚙️ Configuration
 
@@ -232,26 +232,54 @@ Settings are automatically saved in `config.json`:
 
 ```json
 {
-  "download_path": "path/to/download/folder",
+  "download_paths": {
+    "nifty500": "C:\\Users\\YourName\\Downloads\\NSE_Data\\NIFTY500",
+    "market_indices": "C:\\Users\\YourName\\Downloads\\NSE_Data\\Market_Indices"
+  },
   "scheduled_times": ["09:30", "12:00", "15:30"]
 }
 ```
 
-**Backward Compatibility**: Old configs with single `scheduled_time` are automatically converted to the new format.
+**Key Features**:
+- Separate paths for each data source
+- Multiple schedule times supported
+- Scheduled downloads: Monday-Friday only
+- Manual downloads: Any day
 
 ## 📊 How It Works
 
-### Download Process
+### Download Process (Dual-Source)
 
-1. Establishes session with NSE India homepage
-2. Navigates to NIFTY 500 page
-3. Waits for page to load (10 seconds)
-4. Finds download button by ID `dwldcsv`
-5. Clicks download button
-6. Waits for file to appear (up to 30 seconds)
-7. Verifies file size stability (download complete)
-8. Renames file with timestamp
-9. Logs success/failure
+**For NIFTY 500**:
+1. Configures download path for NIFTY 500 folder
+2. Establishes session with NSE India homepage
+3. Navigates to NIFTY 500 page
+4. Waits for page to load (10 seconds)
+5. Finds download button by ID `dwldcsv`
+6. Clicks download button
+7. Waits 3 seconds for download to initiate
+
+**For Market Indices**:
+8. Re-establishes session (8-second wait to avoid blocking)
+9. Configures download path for Market Indices folder
+10. Navigates to Market Indices page
+11. Waits for page to load (10 seconds)
+12. Finds download button by ID `dwldcsv`
+13. Clicks download button
+14. Waits 8 seconds for download to complete (slower download)
+
+**File Processing**:
+15. Verifies both files downloaded successfully
+16. Checks file size stability (download complete)
+17. Renames files with timestamp and source prefix
+18. Logs success/failure for each source
+
+### Weekend Detection
+
+- Checks current day before scheduled downloads
+- Saturday (day 5) and Sunday (day 6) are skipped
+- Logs: "It's Saturday - Market is closed. Skipping."
+- Manual downloads work any day
 
 ### Smart Renaming
 

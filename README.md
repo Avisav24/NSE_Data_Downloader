@@ -928,7 +928,7 @@ Report on [GitHub Issues](https://github.com/Avisav24/NSE_Data_Downloader/issues
 
 ---
 
-Made with ❤️ by the NSE Data Downloader Team
+Made with ❤️ by the Abhinav Vats
 
 ⭐ **Star this repo if you find it useful!** ⭐
 

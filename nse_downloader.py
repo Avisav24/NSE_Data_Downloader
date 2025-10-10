@@ -34,6 +34,7 @@ class NSEDownloader:
         
         self.scheduled_times = ["09:30"]  # Now supports multiple times
         self.is_running = False
+        self.auto_mode = False  # Auto mode: scheduler runs 8 AM - 8 PM
         self.config_file = "config.json"
         self.gui = gui
         self.headless_mode = True  # Run browser hidden in background
@@ -61,6 +62,8 @@ class NSEDownloader:
                     elif 'scheduled_time' in config:
                         # Convert old single time to list
                         self.scheduled_times = [config.get('scheduled_time', "09:30")]
+                    # Load auto mode state
+                    self.auto_mode = config.get('auto_mode', False)
             except Exception as e:
                 logging.error(f"Error loading config: {e}")
     
@@ -69,7 +72,8 @@ class NSEDownloader:
         try:
             config = {
                 'download_paths': self.download_paths,
-                'scheduled_times': self.scheduled_times
+                'scheduled_times': self.scheduled_times,
+                'auto_mode': self.auto_mode
             }
             with open(self.config_file, 'w') as f:
                 json.dump(config, f, indent=4)
@@ -415,6 +419,8 @@ class NSEDownloader:
             if self.gui:
                 files_msg = f"Complete! Downloaded {len(renamed_files)} file(s)" if renamed_files else "Process complete"
                 self.gui.update_progress(100, files_msg)
+                # Reset progress bar after 3 seconds
+                threading.Timer(3.0, self.gui.reset_progress).start()
             
             if renamed_files:
                 print(f"✅ Successfully downloaded {len(renamed_files)} file(s)")
@@ -605,13 +611,17 @@ class DownloaderGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("NSE Data Downloader")
-        self.root.geometry("650x460")  # Increased height for better spacing
+        self.root.geometry("650x485")  # Increased height for Auto Mode checkbox
         self.root.resizable(False, False)
         
         self.downloader = NSEDownloader(gui=self)
         self.scheduler_thread = None
         
         self.create_widgets()
+        
+        # Auto-start scheduler if auto mode is enabled and time is between 8 AM and 8 PM
+        if self.downloader.auto_mode:
+            self.check_and_start_auto_mode()
     
     def create_widgets(self):
         # Title - smaller and more compact
@@ -648,6 +658,16 @@ class DownloaderGUI:
         # Time Schedule Section - compact
         time_frame = ttk.LabelFrame(main_frame, text="Schedule Times", padding="8")
         time_frame.pack(fill=tk.X, pady=5)
+        
+        # Auto Mode Checkbox
+        self.auto_mode_var = tk.BooleanVar(value=self.downloader.auto_mode)
+        auto_mode_check = ttk.Checkbutton(
+            time_frame,
+            text="Auto Mode (8 AM - 8 PM, auto-start scheduler)",
+            variable=self.auto_mode_var,
+            command=self.toggle_auto_mode
+        )
+        auto_mode_check.pack(anchor=tk.W, padx=3, pady=3)
         
         ttk.Label(time_frame, text="Times (HH:MM, 24-hour, comma separated):", font=("Arial", 8)).pack(anchor=tk.W, padx=3, pady=2)
         
@@ -737,6 +757,12 @@ class DownloaderGUI:
         self.progress_label.config(text=display_text)
         self.root.update_idletasks()
     
+    def reset_progress(self):
+        """Reset progress bar to 0"""
+        self.progress_var.set(0)
+        self.progress_label.config(text="Ready")
+        self.root.update_idletasks()
+    
     def validate_time(self, time_str):
         """Validate time format HH:MM"""
         try:
@@ -815,6 +841,36 @@ class DownloaderGUI:
     
     def _run_manual_download(self):
         self.downloader.download_data()
+    
+    def toggle_auto_mode(self):
+        """Toggle auto mode and save state"""
+        self.downloader.auto_mode = self.auto_mode_var.get()
+        self.downloader.save_config()
+        
+        if self.downloader.auto_mode:
+            # Auto mode enabled - check if we should start scheduler
+            self.check_and_start_auto_mode()
+        else:
+            # Auto mode disabled - stop scheduler if running
+            if self.downloader.is_running:
+                self.stop_scheduler()
+    
+    def check_and_start_auto_mode(self):
+        """Check if current time is between 8 AM and 8 PM, and start scheduler if so"""
+        from datetime import datetime
+        
+        current_time = datetime.now()
+        current_hour = current_time.hour
+        
+        # Check if time is between 8 AM (08:00) and 8 PM (20:00)
+        if 8 <= current_hour < 20:
+            # Within auto mode hours - start scheduler if not already running
+            if not self.downloader.is_running:
+                self.start_scheduler()
+                self.update_progress("[Auto Mode] Scheduler started automatically")
+        else:
+            # Outside auto mode hours
+            self.update_progress("[Auto Mode] Outside active hours (8 AM - 8 PM)")
 
 
 def main():

@@ -14,15 +14,20 @@ A powerful desktop application to automatically download **NIFTY 500** and **Mar
 
 **Alternative**: Browse to [releases folder](releases/) and download from there.
 
-### ✨ What's New in v3.0 (Latest)
+### ✨ What's New in v3.1 (Latest)
 
+- 🤖 **Auto Mode**: NEW! Checkbox to auto-start scheduler during business hours (8 AM - 8 PM)
+  - No need to manually press "Start Scheduler" each time you open the app
+  - State saved - checkbox remembers your preference across restarts
+  - Smart time-based activation - only runs during market hours
+- 🔄 **Progress Bar Reset**: Automatically resets to 0% after download completes (3-second delay)
 - 📊 **Dual-Source Downloads**: Download from both NIFTY 500 and Market Indices simultaneously!
 - 🗓️ **Weekend Detection**: Automatically skips downloads on Saturday & Sunday (market closed)
-- � **Separate Folders**: Each data source saves to its own folder
+- 📁 **Separate Folders**: Each data source saves to its own folder
 - 🏷️ **Enhanced File Naming**: New format `NIFTY500_ddmmyy-hhmmmin.csv` (e.g., `NIFTY500_031025-1425min.csv`)
-- 🎨 **Compact GUI**: Redesigned interface (680×450px) with wider path fields
-- � **28 Progress Stages**: Detailed progress from "Configuring" to "Downloading" with percentages
-- �️ **Startup Ready**: Perfect for Windows startup apps with smart weekend handling
+- 🎨 **Compact GUI**: Redesigned interface (650×485px) with wider path fields
+- 📈 **28 Progress Stages**: Detailed progress from "Configuring" to "Downloading" with percentages
+- 🚀 **Startup Ready**: Perfect for Windows startup apps with smart weekend handling
 - ⚡ **Faster Downloads**: CDP download path control for each source
 
 ### ✨ Why Use the Executable?
@@ -145,6 +150,11 @@ Not on Windows? Want to customize? We've got you covered!
    - **Download Locations**: Click "Browse" for each source to select save locations
      - NIFTY 500 folder (e.g., `C:\Users\YourName\Downloads\NSE_Data\NIFTY500`)
      - Market Indices folder (e.g., `C:\Users\YourName\Downloads\NSE_Data\Market_Indices`)
+   - **Auto Mode** (NEW in v3.1):
+     - Check "Auto Mode (8 AM - 8 PM, auto-start scheduler)" to enable automatic scheduler activation
+     - When enabled, scheduler starts automatically when you open the app (if time is between 8 AM - 8 PM)
+     - State is saved - your preference persists across app restarts
+     - Perfect for adding to Windows startup - app will auto-start scheduler during business hours!
    - **Schedule Times**: Enter times in 24-hour format
      - Single time: `09:30`
      - Multiple times: `09:30, 12:00, 15:30`
@@ -211,12 +221,12 @@ Not on Windows? Want to customize? We've got you covered!
 
 ### Examples
 
-| Download Time | NIFTY 500 Filename              | Market Indices Filename              |
-| ------------- | ------------------------------- | ------------------------------------ |
-| 9:30 AM       | `NIFTY500_031025-0930min.csv`   | `MarketIndices_031025-0930min.csv`   |
-| 10:15 AM      | `NIFTY500_031025-1015min.csv`   | `MarketIndices_031025-1015min.csv`   |
-| 2:30 PM       | `NIFTY500_031025-1430min.csv`   | `MarketIndices_031025-1430min.csv`   |
-| 11:45 PM      | `NIFTY500_031025-2345min.csv`   | `MarketIndices_031025-2345min.csv`   |
+| Download Time | NIFTY 500 Filename            | Market Indices Filename            |
+| ------------- | ----------------------------- | ---------------------------------- |
+| 9:30 AM       | `NIFTY500_031025-0930min.csv` | `MarketIndices_031025-0930min.csv` |
+| 10:15 AM      | `NIFTY500_031025-1015min.csv` | `MarketIndices_031025-1015min.csv` |
+| 2:30 PM       | `NIFTY500_031025-1430min.csv` | `MarketIndices_031025-1430min.csv` |
+| 11:45 PM      | `NIFTY500_031025-2345min.csv` | `MarketIndices_031025-2345min.csv` |
 
 ### Duplicate Handling
 
@@ -241,6 +251,7 @@ Settings are automatically saved in `config.json`:
 ```
 
 **Key Features**:
+
 - Separate paths for each data source
 - Multiple schedule times supported
 - Scheduled downloads: Monday-Friday only
@@ -251,6 +262,7 @@ Settings are automatically saved in `config.json`:
 ### Download Process (Dual-Source)
 
 **For NIFTY 500**:
+
 1. Configures download path for NIFTY 500 folder
 2. Establishes session with NSE India homepage
 3. Navigates to NIFTY 500 page
@@ -259,20 +271,9 @@ Settings are automatically saved in `config.json`:
 6. Clicks download button
 7. Waits 3 seconds for download to initiate
 
-**For Market Indices**:
-8. Re-establishes session (8-second wait to avoid blocking)
-9. Configures download path for Market Indices folder
-10. Navigates to Market Indices page
-11. Waits for page to load (10 seconds)
-12. Finds download button by ID `dwldcsv`
-13. Clicks download button
-14. Waits 8 seconds for download to complete (slower download)
+**For Market Indices**: 8. Re-establishes session (8-second wait to avoid blocking) 9. Configures download path for Market Indices folder 10. Navigates to Market Indices page 11. Waits for page to load (10 seconds) 12. Finds download button by ID `dwldcsv` 13. Clicks download button 14. Waits 8 seconds for download to complete (slower download)
 
-**File Processing**:
-15. Verifies both files downloaded successfully
-16. Checks file size stability (download complete)
-17. Renames files with timestamp and source prefix
-18. Logs success/failure for each source
+**File Processing**: 15. Verifies both files downloaded successfully 16. Checks file size stability (download complete) 17. Renames files with timestamp and source prefix 18. Logs success/failure for each source
 
 ### Weekend Detection
 

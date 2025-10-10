@@ -1,73 +1,224 @@
-# NSE Data Downloader
+<div align="center">
 
-A powerful desktop application to automatically download **NIFTY 500** and **Market Indices** data from NSE India website at scheduled times with automatic file naming, smart download detection, **hidden browser mode** for background operation, and **weekend-aware scheduling**.
+# 📈 NSE Data Downloader
+
+### *Automated NIFTY 500 & Market Indices Data Downloader*
+
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)](https://github.com/Avisav24/NSE_Data_Downloader)
+[![Downloads](https://img.shields.io/github/downloads/Avisav24/NSE_Data_Downloader/total.svg)](https://github.com/Avisav24/NSE_Data_Downloader/releases)
+
+A powerful desktop application to automatically download **NIFTY 500** and **Market Indices** data from NSE India with scheduled automation, smart file management, and **weekend-aware scheduling**.
+
+---
 
 ## 📥 Quick Download (No Python Needed!)
 
-**For Windows users**: Download the ready-to-use executable with all latest features!
+### 🎯 **Ready-to-Use Windows Executable**
 
-### 🚀 Direct Download Link
+**Latest Version: v3.1** | **Size: ~54 MB** | **Platform: Windows 10/11**
 
-👉 **[Download NSE_DataDownloader.exe](https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_DataDownloader.exe)** (~54 MB)
+<p>
+  <a href="https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_DataDownloader.exe">
+    <img src="https://img.shields.io/badge/⬇️%20Download-NSE__DataDownloader.exe-success?style=for-the-badge&logo=windows&logoColor=white" alt="Download EXE" height="50"/>
+  </a>
+</p>
 
-🔗 **Direct URL**: `https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_DataDownloader.exe`
+**Direct Download URL:**
+```
+https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_DataDownloader.exe
+```
 
-**Alternative**: Browse to [releases folder](releases/) and download from there.
+*Or browse the [releases folder](releases/) for all versions*
 
-### ✨ What's New in v3.1 (Latest)
+---
 
-- 🤖 **Auto Mode**: NEW! Checkbox to auto-start scheduler during business hours (8 AM - 8 PM)
-  - No need to manually press "Start Scheduler" each time you open the app
-  - State saved - checkbox remembers your preference across restarts
-  - Smart time-based activation - only runs during market hours
-- 🔄 **Progress Bar Reset**: Automatically resets to 0% after download completes (3-second delay)
-- 📊 **Dual-Source Downloads**: Download from both NIFTY 500 and Market Indices simultaneously!
-- 🗓️ **Weekend Detection**: Automatically skips downloads on Saturday & Sunday (market closed)
-- 📁 **Separate Folders**: Each data source saves to its own folder
-- 🏷️ **Enhanced File Naming**: New format `NIFTY500_ddmmyy-hhmmmin.csv` (e.g., `NIFTY500_031025-1425min.csv`)
-- 🎨 **Compact GUI**: Redesigned interface (650×485px) with wider path fields
-- 📈 **28 Progress Stages**: Detailed progress from "Configuring" to "Downloading" with percentages
-- 🚀 **Startup Ready**: Perfect for Windows startup apps with smart weekend handling
-- ⚡ **Faster Downloads**: CDP download path control for each source
+</div>
+
+---
+
+</div>
+
+## ✨ What's New in v3.1
+
+<div align="center">
+
+<table>
+<tr>
+<td width="50%" align="center">
+
+### 🤖 **Auto Mode**
+**NEW!** Set it and forget it!
+
+✅ Auto-start scheduler (8 AM - 8 PM)  
+✅ No manual button clicks needed  
+✅ State persists across restarts  
+✅ Perfect for Windows startup  
+
+</td>
+<td width="50%" align="center">
+
+### 🔄 **Progress Reset**
+**NEW!** Clean interface!
+
+✅ Auto-resets after download  
+✅ 3-second completion display  
+✅ Shows "Ready" status  
+✅ Professional UX  
+
+</td>
+</tr>
+</table>
+
+</div>
+
+### 🎯 Core Features (v3.1)
+
+<table>
+<tr>
+<td width="50%">
+
+**📊 Dual-Source Downloads**
+- NIFTY 500 + Market Indices simultaneously
+- Separate folders for each source
+- CDP download path control
+
+**🗓️ Weekend Detection**
+- Auto-skips Saturday & Sunday
+- Market-aware scheduling
+- Manual override available
+
+**🏷️ Enhanced File Naming**
+- Format: `NIFTY500_ddmmyy-hhmmmin.csv`
+- Example: `NIFTY500_031025-1425min.csv`
+- Duplicate auto-increment
+
+</td>
+<td width="50%">
+
+**🎨 Compact GUI**
+- 650×485px redesigned interface
+- Wide path fields (48 chars)
+- Professional design
+
+**📈 28 Progress Stages**
+- Real-time feedback
+- Percentage display
+- Detailed status messages
+
+**⚡ Smart Features**
+- Hidden browser mode
+- ChromeDriver auto-update
+- Session management
+- Error recovery
+
+</td>
+</tr>
+</table>
 
 ### ✨ Why Use the Executable?
 
-- ✅ No Python installation required
-- ✅ No dependencies to install
-- ✅ Just download and double-click to run!
-- ✅ Download from TWO NSE sources automatically
-- ✅ Weekend-aware scheduling (Mon-Fri only)
-- ✅ Auto-updates ChromeDriver
-- ✅ Browser runs hidden in background
-- ✅ Perfect for Windows startup apps
+<div align="center">
 
-📖 See [releases/README.md](releases/README.md) for detailed usage instructions.
+| Feature | Benefit |
+|:-------:|:-------:|
+| ✅ **No Python Installation** | Just download & run |
+| ✅ **No Dependencies** | Everything included |
+| ✅ **Auto Mode** | Hands-free operation |
+| ✅ **Weekend-Aware** | Smart scheduling (Mon-Fri) |
+| ✅ **Dual Downloads** | Two sources simultaneously |
+| ✅ **Background Mode** | Hidden browser |
+| ✅ **Startup Ready** | Perfect for automation |
 
----
+**Perfect for traders, analysts, and data enthusiasts!** 📊
 
-## 🚀 Multiple Installation Options
-
-Not on Windows? Want to customize? We've got you covered!
-
-| Installation Method                                                                                                        | Best For                    | Platform | Setup Time |
-| -------------------------------------------------------------------------------------------------------------------------- | --------------------------- | -------- | ---------- |
-| **[Windows EXE](https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_DataDownloader.exe)** ⭐ Recommended | End users, Startup apps     | Windows  | 1 min      |
-| **[Python Script](#option-2-install-from-source)**                                                                         | Developers, Mac/Linux users | All      | 5 min      |
+</div>
 
 ---
 
-## 🎯 Features
+## 🚀 Installation Options
 
-### Core Features
+<div align="center">
 
-- **Dual-Source Downloads**: Simultaneously download from NIFTY 500 AND Market Indices pages!
-- **Weekend-Aware Scheduling**: Automatically skips Saturday & Sunday (market closed days)
-- **Separate Download Folders**: Each source saves to its own directory
-  - `NSE_Data/NIFTY500/` for NIFTY 500 data
-  - `NSE_Data/Market_Indices/` for Market Indices data
-- **Hidden Browser Mode**: Browser runs completely in background - no visible window!
-- **28-Stage Progress Bar**: Detailed real-time feedback from "Configuring" to "Complete!"
-- **Multiple Schedule Times**: Set multiple download times throughout the day (e.g., `09:30, 12:00, 15:30`)
+<table>
+<tr>
+<th>Method</th>
+<th>Best For</th>
+<th>Platform</th>
+<th>Setup Time</th>
+</tr>
+<tr>
+<td><b><a href="https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_DataDownloader.exe">Windows EXE</a></b> ⭐</td>
+<td>End users, Startup apps</td>
+<td>Windows 10/11</td>
+<td>1 min</td>
+</tr>
+<tr>
+<td><b><a href="#-python-installation">Python Script</a></b></td>
+<td>Developers, Mac/Linux</td>
+<td>All platforms</td>
+<td>5 min</td>
+</tr>
+</table>
+
+</div>
+
+---
+
+## 🎯 All Features
+
+<div align="center">
+
+### 📦 Core Capabilities
+
+</div>
+
+| Feature | Description |
+|---------|-------------|
+| 📥 **Dual-Source Downloads** | Download from NIFTY 500 AND Market Indices simultaneously |
+| 📅 **Weekend-Aware Scheduling** | Auto-skips Saturday & Sunday (market closed) |
+| 📂 **Separate Folders** | `NSE_Data/NIFTY500/` & `NSE_Data/Market_Indices/` |
+| 🔇 **Hidden Browser Mode** | Completely background operation - no visible window |
+| 📊 **28-Stage Progress** | Real-time feedback from "Configuring" to "Complete!" |
+| ⏰ **Multiple Schedule Times** | Set unlimited times (e.g., `09:30, 12:00, 15:30`) |
+| 🎯 **Manual Download** | Instant downloads with a single click (works any day) |
+| 📁 **Custom Locations** | Choose separate paths for each data source |
+| 🤖 **Auto Mode (v3.1)** | Auto-start scheduler during business hours (8 AM - 8 PM) |
+
+<div align="center">
+
+### 🧠 Smart Features
+
+</div>
+
+```
+File Naming Format: {source}_ddmmyy-hhmmmin.csv
+
+Examples:
+✓ NIFTY500_101025-1425min.csv       (Oct 10, 2025 at 2:25 PM)
+✓ MarketIndices_101025-0930min.csv  (Oct 10, 2025 at 9:30 AM)
+```
+
+- ✅ **Smart Download Detection** - Waits for completion (file size stability check)
+- ✅ **Multi-Location Search** - Checks configured AND default Downloads folder
+- ✅ **Duplicate Handling** - Auto-increments filename (`_1`, `_2`, etc.)
+- ✅ **Session Management** - Bypasses NSE security for each source
+- ✅ **Error Recovery** - Robust ChromeDriver handling with auto-fallback
+- ✅ **CDP Download Control** - Dynamic path setting per source
+- ✅ **Progress Bar Reset (v3.1)** - Auto-resets after download completes
+
+---
+
+## 💻 Python Installation
+
+<div align="center">
+
+**For developers and advanced users who want to customize the code**
+
+</div>
+
+### 📋 Requirements
 - **Scheduled Downloads**: Automatic daily downloads at your configured times (Monday-Friday only)
 - **Manual Download**: Download data instantly any day with a single click
 - **Custom Download Locations**: Choose separate paths for each data source

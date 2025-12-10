@@ -9,7 +9,7 @@
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)](https://github.com/Avisav24/NSE_Data_Downloader)
 [![Downloads](https://img.shields.io/github/downloads/Avisav24/NSE_Data_Downloader/total.svg)](https://github.com/Avisav24/NSE_Data_Downloader/releases)
 
-A powerful desktop application to automatically download **NIFTY 500** and **Market Indices** data from NSE India with scheduled automation, smart file management, and **weekend-aware scheduling**.
+A powerful desktop application to automatically download **NIFTY 500** and **Market Indices** with multiple **ARCHIVES/FnO/BULKS** data from NSE India with scheduled automation, smart file management, and **weekend-aware scheduling**.
 
 ---
 

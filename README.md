@@ -17,17 +17,17 @@ A powerful desktop application to automatically download **NIFTY 500** and **Mar
 
 ### 🎯 **Ready-to-Use Windows Executable**
 
-**Latest Version: v3.1** | **Size: ~54 MB** | **Platform: Windows 10/11**
+**Latest Version: v3.1** | **Size: ~82 MB** | **Platform: Windows 10/11**
 
 <p>
-  <a href="https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_DataDownloader.exe">
-    <img src="https://img.shields.io/badge/⬇️%20Download-NSE__DataDownloader.exe-success?style=for-the-badge&logo=windows&logoColor=white" alt="Download EXE" height="50"/>
+  <a href="https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_Data_Downloader.exe">
+    <img src="https://img.shields.io/badge/⬇️%20Download-NSE__Data_Downloader.exe-success?style=for-the-badge&logo=windows&logoColor=white" alt="Download EXE" height="50"/>
   </a>
 </p>
 
 **Direct Download URL:**
-```
-https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_DataDownloader.exe
+```text
+https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_Data_Downloader.exe
 ```
 
 *Or browse the [releases folder](releases/) for all versions*
@@ -149,7 +149,7 @@ https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_DataDownlo
 <th>Setup Time</th>
 </tr>
 <tr>
-<td><b><a href="https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_DataDownloader.exe">Windows EXE</a></b> ⭐</td>
+<td><b><a href="https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_Data_Downloader.exe">Windows EXE</a></b> ⭐</td>
 <td>End users, Startup apps</td>
 <td>Windows 10/11</td>
 <td>1 min</td>
@@ -264,7 +264,7 @@ Examples:
 
 ### Option 1: Download Executable (Recommended for Windows)
 
-1. Download [NSE_DataDownloader.exe](releases/NSE_DataDownloader.exe)
+1. Download [NSE_Data_Downloader.exe](releases/NSE_Data_Downloader.exe)
 2. Double-click to run
 3. That's it! No installation needed.
 

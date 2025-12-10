@@ -2,23 +2,22 @@
 
 ## Download
 
-**Latest Version**: v2.1 (Enhanced Headless Mode)  
-**File**: `NSE_DataDownloader.exe`  
-**Size**: ~56 MB  
+**Latest Version**: v3.1 (Optional Downloads & Scheduler Enhancements)  
+**File**: `NSE_Data_Downloader.exe`  
+**Size**: ~82 MB  
 **Platform**: Windows 10/11 (64-bit)
 
-## ✨ What's New in v2.1
+## ✨ What's New in v3.1
 
-- 🎯 **Hidden Browser Mode**: Downloads run completely in the background
-- 📊 **Progress Bar**: Visual feedback showing download stages (10%-100%)
-- 🔄 **Enhanced Reliability**: Improved ChromeDriver error handling with auto-fallback
-- 📁 **Smart File Detection**: Checks multiple locations for downloaded files
-- 🚀 **Better Performance**: Optimized session handling and button detection
-- 🧹 **Cleaner Interface**: Streamlined UI with essential features only
+- 📁 **EOD Folder Support**: Optional data automatically routes to `EOD_Data` directories
+- 🗂️ **13 Optional Sources**: Toggle and download additional NSE datasets on demand
+- 🕘 **Nightly Automation**: Optional bundle auto-runs at 9 PM with date-aware URLs
+- ⚡ **Faster Downloads**: Reduced wait times and smarter rename logic for large batches
+- 🧠 **Smarter Sessions**: Direct HTTP flow for OI Spurts and robust ChromeDriver fallback
 
 ## Quick Start
 
-1. **Download** the `NSE_DataDownloader.exe` file
+1. **Download** the `NSE_Data_Downloader.exe` file
 2. **Double-click** to run (no installation needed!)
 3. **Configure** your download times and location
 4. **Start** the scheduler or download manually
@@ -35,7 +34,7 @@ This is a standalone executable. You don't need Python or any dependencies insta
 
 ## First-Time Setup
 
-1. Download `NSE_DataDownloader.exe`
+1. Download `NSE_Data_Downloader.exe`
 2. Right-click → Properties → Check "Unblock" if present
 3. Double-click to run
 
@@ -87,7 +86,7 @@ On first run, the app creates:
 
 **Antivirus blocks the file**:
 
-- Add exception for `NSE_DataDownloader.exe`
+- Add exception for `NSE_Data_Downloader.exe`
 - The file is safe, just unsigned
 
 **Chrome not found**:

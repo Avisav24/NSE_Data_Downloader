@@ -16,7 +16,7 @@ from tkinter import ttk, messagebox, filedialog
 import json
 import threading
 import requests
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 
 class NSEDownloader:
     def __init__(self, gui=None):
@@ -25,16 +25,54 @@ class NSEDownloader:
             'nifty500': "https://www.nseindia.com/market-data/live-equity-market?symbol=NIFTY%20500",
             'market_indices': "https://www.nseindia.com/market-data/live-market-indices"
         }
+
+        # Direct download URLs with placeholders
+        # Formats: {ddmmyyyy}, {ddmmyy}, {yyyymmdd}, {dd-Mon-yyyy}
+        self.direct_urls = {
+            'oi_spurts': "https://www.nseindia.com/api/live-analysis-oi-spurts-underlyings?type=underlying&csv=true&partialFileName=By-Underlying",
+            'combine_oi': "https://nsearchives.nseindia.com/archives/nsccl/mwpl/combineoi_{ddmmyyyy}.zip",
+            'pe_detail': "https://nsearchives.nseindia.com/content/equities/peDetail/PE_{ddmmyy}.csv",
+            'cm_high_low': "https://nsearchives.nseindia.com/content/CM_52_wk_High_low_{ddmmyyyy}.csv",
+            'sec_bhavdata': "https://nsearchives.nseindia.com/products/content/sec_bhavdata_full_{ddmmyyyy}.csv",
+            'block_deals': "https://nsearchives.nseindia.com/content/equities/block.csv",
+            'bulk_deals': "https://nsearchives.nseindia.com/content/equities/bulk.csv",
+            'bhavcopy_cm': "https://nsearchives.nseindia.com/content/cm/BhavCopy_NSE_CM_0_0_0_{yyyymmdd}_F_0000.csv.zip",
+            'ind_close': "https://nsearchives.nseindia.com/content/indices/ind_close_all_{ddmmyyyy}.csv",
+            'fao_participant_vol': "https://nsearchives.nseindia.com/content/nsccl/fao_participant_vol_{ddmmyyyy}.csv",
+            'fao_participant_oi': "https://nsearchives.nseindia.com/content/nsccl/fao_participant_oi_{ddmmyyyy}.csv",
+            'fii_stats': "https://nsearchives.nseindia.com/content/fo/fii_stats_{dd-Mon-yyyy}.xls",
+            'bhavcopy_fo': "https://nsearchives.nseindia.com/content/fo/BhavCopy_NSE_FO_0_0_0_{yyyymmdd}_F_0000.csv.zip"
+        }
+        
+        self.target_date = datetime.now() # Default to today
         
         # Download paths for each source
+        nse_base_path = os.path.join(os.path.expanduser("~"), "Downloads", "NSE_Data")
+        eod_base_path = os.path.join(os.path.expanduser("~"), "Downloads", "EOD_Data")
+        
         self.download_paths = {
-            'nifty500': os.path.join(os.path.expanduser("~"), "Downloads", "NSE_Data", "NIFTY500"),
-            'market_indices': os.path.join(os.path.expanduser("~"), "Downloads", "NSE_Data", "Market_Indices")
+            'nifty500': os.path.join(nse_base_path, "NIFTY500"),
+            'market_indices': os.path.join(nse_base_path, "Market_Indices"),
+            'oi_spurts': os.path.join(eod_base_path, "OI_Spurts"),
+            'combine_oi': os.path.join(eod_base_path, "Combine_OI"),
+            'pe_detail': os.path.join(eod_base_path, "PE_Detail"),
+            'cm_high_low': os.path.join(eod_base_path, "CM_High_Low"),
+            'sec_bhavdata': os.path.join(eod_base_path, "Sec_Bhavdata"),
+            'block_deals': os.path.join(eod_base_path, "Block_Deals"),
+            'bulk_deals': os.path.join(eod_base_path, "Bulk_Deals"),
+            'bhavcopy_cm': os.path.join(eod_base_path, "BhavCopy_CM"),
+            'ind_close': os.path.join(eod_base_path, "Ind_Close"),
+            'fao_participant_vol': os.path.join(eod_base_path, "FAO_Participant_Vol"),
+            'fao_participant_oi': os.path.join(eod_base_path, "FAO_Participant_OI"),
+            'fii_stats': os.path.join(eod_base_path, "FII_Stats"),
+            'bhavcopy_fo': os.path.join(eod_base_path, "BhavCopy_FO")
         }
         
         self.scheduled_times = ["09:30"]  # Now supports multiple times
+        self.optional_download_time = "21:00"  # Optional files run at 9 PM daily
         self.is_running = False
         self.auto_mode = False  # Auto mode: scheduler runs 8 AM - 8 PM
+        self.enabled_downloads = [] # List of enabled optional downloads
         self.config_file = "config.json"
         self.gui = gui
         self.headless_mode = True  # Run browser hidden in background
@@ -50,20 +88,52 @@ class NSEDownloader:
     def load_config(self):
         """Load configuration from file"""
         if os.path.exists(self.config_file):
+            migrated = False
             try:
                 with open(self.config_file, 'r') as f:
                     config = json.load(f)
                     # Load custom paths if available
                     if 'download_paths' in config:
                         self.download_paths.update(config.get('download_paths', {}))
+
+                        # Ensure legacy NSE_Data paths for optional files move to EOD_Data
+                        eod_keys = [
+                            'oi_spurts', 'combine_oi', 'pe_detail', 'cm_high_low',
+                            'sec_bhavdata', 'block_deals', 'bulk_deals', 'bhavcopy_cm',
+                            'ind_close', 'fao_participant_vol', 'fao_participant_oi',
+                            'fii_stats', 'bhavcopy_fo'
+                        ]
+                        eod_base_path = os.path.join(os.path.expanduser("~"), "Downloads", "EOD_Data")
+
+                        for key in eod_keys:
+                            current_path = self.download_paths.get(key)
+                            if not current_path:
+                                continue
+
+                            normalized = current_path.lower()
+                            if "nse_data" in normalized and "eod_data" not in normalized:
+                                folder_name = os.path.basename(os.path.normpath(current_path))
+                                new_path = os.path.join(eod_base_path, folder_name)
+                                self.download_paths[key] = new_path
+                                migrated = True
+                                logging.info(f"Migrated path for {key} to EOD_Data: {new_path}")
+
                     # Support both old single time and new multiple times
                     if 'scheduled_times' in config:
                         self.scheduled_times = config.get('scheduled_times', self.scheduled_times)
                     elif 'scheduled_time' in config:
                         # Convert old single time to list
                         self.scheduled_times = [config.get('scheduled_time', "09:30")]
+                    # Optional downloads time
+                    if 'optional_download_time' in config:
+                        self.optional_download_time = config.get('optional_download_time', self.optional_download_time)
                     # Load auto mode state
                     self.auto_mode = config.get('auto_mode', False)
+                    # Load enabled downloads
+                    self.enabled_downloads = config.get('enabled_downloads', [])
+
+                if migrated:
+                    self.save_config()
             except Exception as e:
                 logging.error(f"Error loading config: {e}")
     
@@ -73,7 +143,9 @@ class NSEDownloader:
             config = {
                 'download_paths': self.download_paths,
                 'scheduled_times': self.scheduled_times,
-                'auto_mode': self.auto_mode
+                'optional_download_time': self.optional_download_time,
+                'auto_mode': self.auto_mode,
+                'enabled_downloads': self.enabled_downloads
             }
             with open(self.config_file, 'w') as f:
                 json.dump(config, f, indent=4)
@@ -180,6 +252,31 @@ class NSEDownloader:
         
         return driver
     
+    def get_formatted_url(self, url, date_obj):
+        """Format URL with date placeholders"""
+        if not date_obj:
+            date_obj = datetime.now()
+            
+        formatted_url = url
+        
+        # Replace {ddmmyyyy} -> 09122025
+        if "{ddmmyyyy}" in formatted_url:
+            formatted_url = formatted_url.replace("{ddmmyyyy}", date_obj.strftime("%d%m%Y"))
+            
+        # Replace {ddmmyy} -> 091225
+        if "{ddmmyy}" in formatted_url:
+            formatted_url = formatted_url.replace("{ddmmyy}", date_obj.strftime("%d%m%y"))
+            
+        # Replace {yyyymmdd} -> 20251209
+        if "{yyyymmdd}" in formatted_url:
+            formatted_url = formatted_url.replace("{yyyymmdd}", date_obj.strftime("%Y%m%d"))
+            
+        # Replace {dd-Mon-yyyy} -> 09-Dec-2025
+        if "{dd-Mon-yyyy}" in formatted_url:
+            formatted_url = formatted_url.replace("{dd-Mon-yyyy}", date_obj.strftime("%d-%b-%Y"))
+            
+        return formatted_url
+
     def download_from_source(self, driver, source_name, url, download_path, progress_offset=0, extra_wait=0):
         """Download from a specific NSE source
         
@@ -320,22 +417,91 @@ class NSEDownloader:
             print(f"Error downloading from {source_name}: {str(e)}")
             return False
     
-    def download_data(self):
-        """Download CSV files from both NSE sources"""
+    def download_direct_file(self, driver, source_name, url, download_path, progress_offset=0):
+        """Download a file directly from a URL using HTTP requests
+
+        Args:
+            driver: Selenium WebDriver instance
+            source_name: Name of the source
+            url: URL to download from
+            download_path: Path to save downloads
+            progress_offset: Offset for progress bar
+        """
+        abs_download_path = os.path.abspath(download_path)
+        try:
+            if not os.path.exists(abs_download_path):
+                os.makedirs(abs_download_path)
+
+            logging.info(f"Direct download for {source_name} to: {abs_download_path}")
+
+            if self.gui:
+                self.gui.update_progress(progress_offset, f"Downloading {source_name}...", bar="optional")
+
+            session = requests.Session()
+
+            # Attempt to share cookies from Selenium session to maintain NSE authentication
+            if driver:
+                try:
+                    for cookie in driver.get_cookies():
+                        session.cookies.set(cookie.get("name"), cookie.get("value"))
+                except Exception as cookie_err:
+                    logging.debug(f"Cookie transfer skipped for {source_name}: {cookie_err}")
+
+            headers = self.get_nse_headers()
+            headers.update({
+                "Referer": "https://www.nseindia.com/",
+                "Accept": "*/*",
+                "Accept-Encoding": "gzip, deflate, br",
+            })
+
+            response = session.get(url, headers=headers, timeout=60, allow_redirects=True)
+            if response.status_code != 200:
+                logging.error(f"Direct download failed for {source_name} (HTTP {response.status_code})")
+                return False
+
+            filename = None
+            content_disp = response.headers.get("Content-Disposition")
+            if content_disp and "filename=" in content_disp:
+                filename = content_disp.split("filename=")[-1].split(";")[0].strip('"')
+
+            if not filename:
+                parsed = urlparse(url)
+                ext = os.path.splitext(parsed.path)[1] or ".csv"
+                filename = f"{source_name}{ext}"
+
+            target_file = os.path.join(abs_download_path, filename)
+            with open(target_file, "wb") as fp:
+                fp.write(response.content)
+
+            logging.info(f"Saved {source_name} as {target_file}")
+            return True
+        except Exception as e:
+            logging.error(f"Error downloading {source_name}: {str(e)}")
+            print(f"Error downloading {source_name}: {str(e)}")
+            return False
+
+    def download_data(self, mode='all'):
+        """
+        Download CSV files from NSE sources
+        mode: 'all', 'defaults' (NIFTY500/Indices), 'optionals' (Selected files)
+        """
         driver = None
         try:
+            # Determine which progress bar to use for general updates
+            target_bar = "optional" if mode == 'optionals' else "main"
+            
             # Update progress: Starting
             if self.gui:
-                self.gui.update_progress(5, "Starting browser...")
+                self.gui.update_progress(5, f"Starting browser ({mode} mode)...", bar=target_bar)
             
-            logging.info(f"Starting downloads at {datetime.now()}")
-            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Starting downloads...")
+            logging.info(f"Starting downloads at {datetime.now()} (Mode: {mode})")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Starting downloads ({mode})...")
             
             driver = self.setup_driver()
             
             # Update progress: Browser started
             if self.gui:
-                self.gui.update_progress(10, "Browser started! Connecting to NSE...")
+                self.gui.update_progress(10, "Browser started! Connecting to NSE...", bar=target_bar)
             
             # First, visit NSE homepage to get cookies and establish session
             logging.info("Establishing session with NSE...")
@@ -343,82 +509,169 @@ class NSEDownloader:
             
             # Update progress: Session establishing
             if self.gui:
-                self.gui.update_progress(12, "Establishing session with NSE India...")
+                self.gui.update_progress(12, "Establishing session with NSE India...", bar=target_bar)
             
             time.sleep(7)  # Increased wait for reliable session establishment
             
-            # Download from NIFTY 500
-            logging.info("=" * 50)
-            logging.info("DOWNLOADING FROM NIFTY 500")
-            logging.info("=" * 50)
-            success_nifty500 = self.download_from_source(
-                driver, 
-                "NIFTY 500", 
-                self.urls['nifty500'], 
-                self.download_paths['nifty500'],
-                progress_offset=0,
-                extra_wait=0  # Standard wait for NIFTY 500
-            )
+            success_nifty500 = False
+            if mode in ['all', 'defaults']:
+                # Always download NIFTY 500 in defaults mode
+                logging.info("=" * 50)
+                logging.info("DOWNLOADING FROM NIFTY 500")
+                logging.info("=" * 50)
+                success_nifty500 = self.download_from_source(
+                    driver, 
+                    "NIFTY 500", 
+                    self.urls['nifty500'], 
+                    self.download_paths['nifty500'],
+                    progress_offset=0,
+                    extra_wait=0  # Standard wait for NIFTY 500
+                )
             
-            # Download from Market Indices
-            logging.info("=" * 50)
-            logging.info("DOWNLOADING FROM MARKET INDICES")
-            logging.info("=" * 50)
+            success_market = False
+            if mode in ['all', 'defaults']:
+                # Always download Market Indices in defaults mode
+                logging.info("=" * 50)
+                logging.info("DOWNLOADING FROM MARKET INDICES")
+                logging.info("=" * 50)
+                
+                # Update progress: Preparing for second download
+                if self.gui:
+                    self.gui.update_progress(50, "Preparing for Market Indices download...", bar="main")
+                
+                # Re-establish session for second download (longer wait to avoid blocking)
+                logging.info("Re-establishing session for Market Indices...")
+                driver.get("https://www.nseindia.com")
+                
+                # Update progress: Re-establishing session
+                if self.gui:
+                    self.gui.update_progress(52, "Re-establishing session for Market Indices...", bar="main")
+                
+                time.sleep(8)  # Longer wait to avoid being blocked
+                
+                success_market = self.download_from_source(
+                    driver, 
+                    "Market Indices", 
+                    self.urls['market_indices'], 
+                    self.download_paths['market_indices'],
+                    progress_offset=50,
+                    extra_wait=5  # Extra 5 seconds wait for Market Indices (slower download)
+                )
             
-            # Update progress: Preparing for second download
-            if self.gui:
-                self.gui.update_progress(50, "Preparing for Market Indices download...")
-            
-            # Re-establish session for second download (longer wait to avoid blocking)
-            logging.info("Re-establishing session for Market Indices...")
-            driver.get("https://www.nseindia.com")
-            
-            # Update progress: Re-establishing session
-            if self.gui:
-                self.gui.update_progress(52, "Re-establishing session for Market Indices...")
-            
-            time.sleep(8)  # Longer wait to avoid being blocked
-            
-            success_market = self.download_from_source(
-                driver, 
-                "Market Indices", 
-                self.urls['market_indices'], 
-                self.download_paths['market_indices'],
-                progress_offset=50,
-                extra_wait=5  # Extra 5 seconds wait for Market Indices (slower download)
-            )
+            # Process direct downloads
+            direct_download_results = {}
+            if mode in ['all', 'optionals'] and hasattr(self, 'direct_urls'):
+                # Filter only enabled downloads
+                enabled_keys = [k for k in self.direct_urls.keys() if k in self.enabled_downloads]
+                total_direct = len(enabled_keys)
+                
+                if total_direct > 0:
+                    for i, key in enumerate(enabled_keys):
+                        url = self.direct_urls[key]
+                        logging.info("=" * 50)
+                        logging.info(f"DOWNLOADING {key.upper()}")
+                        logging.info("=" * 50)
+                        
+                        # Calculate progress (0 to 100 for optional bar)
+                        progress = int((i / total_direct) * 100)
+                        
+                        # Format URL with target date
+                        formatted_url = self.get_formatted_url(url, self.target_date)
+                        print(f"Downloading {key} from: {formatted_url}")
+                        
+                        success = self.download_direct_file(
+                            driver,
+                            key,
+                            formatted_url,
+                            self.download_paths[key],
+                            progress_offset=progress
+                        )
+                        direct_download_results[key] = success
+                        time.sleep(0.5)  # Smaller delay between downloads
             
             # Update progress: Downloads initiated
             if self.gui:
-                self.gui.update_progress(90, "Verifying downloaded files...")
+                if mode in ['all', 'defaults']:
+                    self.gui.update_progress(90, "Verifying downloaded files...", bar="main")
+                if mode in ['all', 'optionals']:
+                    self.gui.update_progress(95, "Verifying optional files...", bar="optional")
             
             # Rename both downloaded files
             renamed_files = []
+            failed_downloads = []
             
-            if success_nifty500:
-                # Update progress: Processing NIFTY 500 file
-                if self.gui:
-                    self.gui.update_progress(92, "Renaming NIFTY 500 file...")
-                renamed = self.rename_downloaded_file('nifty500', self.download_paths['nifty500'])
-                if renamed:
-                    renamed_files.append(renamed)
+            if mode in ['all', 'defaults']:
+                if success_nifty500:
+                    # Update progress: Processing NIFTY 500 file
+                    if self.gui:
+                        self.gui.update_progress(92, "Renaming NIFTY 500 file...", bar="main")
+                    renamed = self.rename_downloaded_file('nifty500', self.download_paths['nifty500'])
+                    if renamed:
+                        renamed_files.append(renamed)
+                    else:
+                        failed_downloads.append("NIFTY 500")
+                else:
+                    failed_downloads.append("NIFTY 500")
             
-            if success_market:
-                # Update progress: Processing Market Indices file
-                if self.gui:
-                    self.gui.update_progress(95, "Renaming Market Indices file...")
-                renamed = self.rename_downloaded_file('market_indices', self.download_paths['market_indices'])
-                if renamed:
-                    renamed_files.append(renamed)
+                if success_market:
+                    # Update progress: Processing Market Indices file
+                    if self.gui:
+                        self.gui.update_progress(95, "Renaming Market Indices file...", bar="main")
+                    renamed = self.rename_downloaded_file('market_indices', self.download_paths['market_indices'])
+                    if renamed:
+                        renamed_files.append(renamed)
+                    else:
+                        failed_downloads.append("Market Indices")
+                else:
+                    failed_downloads.append("Market Indices")
+            
+            # Rename direct downloads
+            if hasattr(self, 'direct_urls') and mode in ['all', 'optionals']:
+                # Check which ones were supposed to be downloaded
+                enabled_keys = [k for k in self.direct_urls.keys() if k in self.enabled_downloads]
+                
+                for key in enabled_keys:
+                    success = direct_download_results.get(key, False)
+                    if success:
+                        if self.gui:
+                            self.gui.update_progress(98, f"Renaming {key} file...", bar="optional")
+                        
+                        # Determine extension based on URL
+                        ext = '.csv'
+                        if '.zip' in self.direct_urls[key].lower():
+                            ext = '.zip'
+                        elif '.xls' in self.direct_urls[key].lower():
+                            ext = '.xls'
+                            
+                        renamed = self.rename_downloaded_file(key, self.download_paths[key], extension=ext)
+                        if renamed:
+                            renamed_files.append(renamed)
+                        else:
+                            failed_downloads.append(key)
+                    else:
+                        failed_downloads.append(key)
+
+            # Show notification for failed downloads
+            if failed_downloads and self.gui:
+                failed_str = "\n".join([f"- {name}" for name in failed_downloads])
+                def show_alert():
+                    messagebox.showwarning(
+                        "Download Incomplete", 
+                        f"The following files could not be downloaded (possibly not available for this date):\n\n{failed_str}"
+                    )
+                self.gui.root.after(0, show_alert)
             
             # Update progress: Finalizing
             if self.gui:
-                self.gui.update_progress(98, "Finalizing downloads...")
+                if mode in ['all', 'defaults']:
+                    self.gui.update_progress(98, "Finalizing downloads...", bar="main")
+                if mode in ['all', 'optionals']:
+                    self.gui.update_progress(100, "Complete!", bar="optional")
             
             # Update progress: Complete
             if self.gui:
                 files_msg = f"Complete! Downloaded {len(renamed_files)} file(s)" if renamed_files else "Process complete"
-                self.gui.update_progress(100, files_msg)
+                self.gui.update_progress(100, files_msg, bar=target_bar)
                 # Reset progress bar after 3 seconds
                 threading.Timer(3.0, self.gui.reset_progress).start()
             
@@ -439,12 +692,13 @@ class NSEDownloader:
             if driver:
                 driver.quit()
     
-    def rename_downloaded_file(self, source_name, download_path):
-        """Rename the most recently downloaded CSV file with timestamp
+    def rename_downloaded_file(self, source_name, download_path, extension='.csv'):
+        """Rename the most recently downloaded file with timestamp
         
         Args:
-            source_name: Name of source ('nifty500' or 'market_indices')
+            source_name: Name of source
             download_path: Path where file was downloaded
+            extension: File extension to look for (default: .csv)
         
         Returns:
             str: New filename if successful, None if failed
@@ -477,25 +731,25 @@ class NSEDownloader:
                         continue
                         
                     all_files = os.listdir(check_path)
-                    # Look for CSV files (case-insensitive) that aren't already renamed
-                    csv_files = [f for f in all_files 
-                                if f.lower().endswith('.csv') 
-                                and not ('_' in f and '-' in f)]  # Skip already renamed files
+                    # Look for files (case-insensitive) that aren't already renamed
+                    target_files = [f for f in all_files 
+                                if f.lower().endswith(extension.lower()) 
+                                and not ('_' in f and '-' in f and len(f) > 20)]  # Skip already renamed files
                     downloading = [f for f in all_files if f.endswith('.crdownload') or f.endswith('.tmp')]
                     
                     if wait_count == 0 or wait_count % 10 == 0:
-                        print(f"  {source_name} Wait {wait_count}s: Found {len(csv_files)} CSV, {len(downloading)} downloading...")
+                        print(f"  {source_name} Wait {wait_count}s: Found {len(target_files)} {extension} files, {len(downloading)} downloading...")
                     
-                    if csv_files:
+                    if target_files:
                         # Get the most recent file
-                        files_with_path = [os.path.join(check_path, f) for f in csv_files]
+                        files_with_path = [os.path.join(check_path, f) for f in target_files]
                         potential_file = max(files_with_path, key=os.path.getctime)
                         found_in_path = check_path
                         
                         # Check if file size is stable (download completed)
                         if os.path.exists(potential_file):
                             size1 = os.path.getsize(potential_file)
-                            time.sleep(2)
+                            time.sleep(1)
                             if os.path.exists(potential_file):
                                 size2 = os.path.getsize(potential_file)
                                 if size1 == size2 and size1 > 0:
@@ -507,17 +761,26 @@ class NSEDownloader:
                 if latest_file:
                     break
                     
-                time.sleep(2)
-                wait_count += 2
+                time.sleep(1)
+                wait_count += 1
             
             if not latest_file:
-                logging.warning(f"No new CSV file found for {source_name} after {max_wait} seconds")
+                logging.warning(f"No new {extension} file found for {source_name} after {max_wait} seconds")
                 print(f"  ⚠️ No file found for {source_name}")
                 return None
             
             # Create new filename with timestamp (format: ddmmyy-hhmmmin)
             now = datetime.now()
-            date_str = now.strftime('%d%m%y')  # e.g., 011025 for Oct 1, 2025
+            
+            # Determine date to use in filename
+            # For NIFTY 500 and Market Indices, always use current date (live data)
+            # For others, use the selected target date
+            if source_name in ['nifty500', 'market_indices']:
+                file_date = now
+            else:
+                file_date = self.target_date if hasattr(self, 'target_date') and self.target_date else now
+                
+            date_str = file_date.strftime('%d%m%y')  # e.g., 011025
             time_str = now.strftime('%H%M')   # e.g., 1425 for 2:25 PM
             
             # Get original filename (without extension)
@@ -527,10 +790,12 @@ class NSEDownloader:
             # Create new filename based on source (with "min" suffix)
             if source_name == 'nifty500':
                 prefix = "NIFTY500"
-            else:  # market_indices
+            elif source_name == 'market_indices':  # market_indices
                 prefix = "MarketIndices"
+            else:
+                prefix = source_name
             
-            new_filename = f"{prefix}_{date_str}-{time_str}min.csv"
+            new_filename = f"{prefix}_{date_str}-{time_str}min{extension}"
             new_filepath = os.path.join(download_path, new_filename)
             
             # If file with same name exists, add counter
@@ -586,8 +851,21 @@ class NSEDownloader:
         
         # Weekday - proceed with download
         logging.info("Weekday detected - Proceeding with scheduled download")
-        self.download_data()
+        # Ensure scheduled downloads always use current date
+        self.target_date = datetime.now()
+        # Scheduler only downloads defaults (NIFTY 500 & Indices)
+        self.download_data(mode='defaults')
     
+    def scheduled_optionals_wrapper(self):
+        """Run optional download set each evening"""
+        if not self.enabled_downloads:
+            logging.info("No optional downloads enabled; skipping optional schedule run")
+            return
+
+        logging.info("Starting scheduled optional downloads")
+        self.target_date = datetime.now()
+        self.download_data(mode='optionals')
+
     def schedule_download(self):
         """Schedule the download job for multiple times"""
         schedule.clear()
@@ -598,6 +876,11 @@ class NSEDownloader:
         
         times_display = ", ".join(self.scheduled_times)
         print(f"Download scheduled for {times_display} daily (Monday-Friday only)")
+
+        # Schedule optional downloads for daily 9 PM run
+        schedule.every().day.at(self.optional_download_time).do(self.scheduled_optionals_wrapper)
+        logging.info(f"Optional downloads scheduled for {self.optional_download_time} daily")
+        print(f"Optional downloads scheduled for {self.optional_download_time} daily")
     
     def run_scheduler(self):
         """Run the scheduler loop"""
@@ -611,13 +894,26 @@ class DownloaderGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("NSE Data Downloader")
-        self.root.geometry("650x485")  # Increased height for Auto Mode checkbox
-        self.root.resizable(False, False)
+        self.root.geometry("650x680")  # Further reduced height for 3-column layout
+        self.root.resizable(True, True)  # Allow resizing
         
         self.downloader = NSEDownloader(gui=self)
         self.scheduler_thread = None
         
+        # Initialize selection variables
+        self.selected_downloads = {}
+        
         self.create_widgets()
+        
+        # Restore previous selections if config exists
+        if self.downloader.enabled_downloads:
+            # First deselect all (since default is now True)
+            for var in self.selected_downloads.values():
+                var.set(False)
+            # Then select only enabled ones
+            for key, var in self.selected_downloads.items():
+                if key in self.downloader.enabled_downloads:
+                    var.set(True)
         
         # Auto-start scheduler if auto mode is enabled and time is between 8 AM and 8 PM
         if self.downloader.auto_mode:
@@ -628,36 +924,136 @@ class DownloaderGUI:
         title_label = tk.Label(
             self.root,
             text="NSE Data Downloader",
-            font=("Arial", 14, "bold"),
-            pady=5
+            font=("Arial", 11, "bold"),
+            pady=0
         )
         title_label.pack()
         
         # Main frame - reduced padding
-        main_frame = ttk.Frame(self.root, padding="10")
+        main_frame = ttk.Frame(self.root, padding="2")
         main_frame.pack(fill=tk.BOTH, expand=True)
         
-        # Download Path Section - Show both download locations (compact)
-        path_frame = ttk.LabelFrame(main_frame, text="Download Locations", padding="8")
-        path_frame.pack(fill=tk.X, pady=5)
+        # Create Notebook (Tabs)
+        self.notebook = ttk.Notebook(main_frame)
+        self.notebook.pack(fill=tk.BOTH, expand=True, pady=2)
         
-        # NIFTY 500 path - compact layout
-        ttk.Label(path_frame, text="NIFTY 500:", width=12).grid(row=0, column=0, padx=3, pady=2, sticky=tk.W)
-        self.nifty_path_var = tk.StringVar(value=self.downloader.download_paths['nifty500'])
-        nifty_entry = ttk.Entry(path_frame, textvariable=self.nifty_path_var, width=48)
-        nifty_entry.grid(row=0, column=1, padx=3, pady=2)
-        ttk.Button(path_frame, text="Browse", command=lambda: self.browse_folder('nifty500'), width=8).grid(row=0, column=2, padx=3, pady=2)
+        # Create Tabs
+        self.dashboard_tab = ttk.Frame(self.notebook, padding=2)
+        self.settings_tab = ttk.Frame(self.notebook, padding=2)
         
-        # Market Indices path - compact layout
-        ttk.Label(path_frame, text="Market Indices:", width=12).grid(row=1, column=0, padx=3, pady=2, sticky=tk.W)
-        self.market_path_var = tk.StringVar(value=self.downloader.download_paths['market_indices'])
-        market_entry = ttk.Entry(path_frame, textvariable=self.market_path_var, width=48)
-        market_entry.grid(row=1, column=1, padx=3, pady=2)
-        ttk.Button(path_frame, text="Browse", command=lambda: self.browse_folder('market_indices'), width=8).grid(row=1, column=2, padx=3, pady=2)
+        self.notebook.add(self.dashboard_tab, text="Dashboard")
+        self.notebook.add(self.settings_tab, text="Settings")
         
+        # --- DASHBOARD TAB ---
+        
+        # Date Selection Section
+        date_frame = ttk.LabelFrame(self.dashboard_tab, text="Select Date", padding="2")
+        date_frame.pack(fill=tk.X, pady=1)
+        
+        # Date Picker (Day, Month, Year)
+        date_inner_frame = ttk.Frame(date_frame)
+        date_inner_frame.pack(fill=tk.X)
+        
+        ttk.Label(date_inner_frame, text="Date:").pack(side=tk.LEFT, padx=2)
+        
+        # Day
+        self.day_var = tk.StringVar(value=datetime.now().strftime("%d"))
+        days = [f"{i:02d}" for i in range(1, 32)]
+        self.day_cb = ttk.Combobox(date_inner_frame, textvariable=self.day_var, values=days, width=3, state="readonly")
+        self.day_cb.pack(side=tk.LEFT, padx=1)
+        
+        # Month
+        self.month_var = tk.StringVar(value=datetime.now().strftime("%B"))
+        months = ["January", "February", "March", "April", "May", "June", 
+                  "July", "August", "September", "October", "November", "December"]
+        self.month_cb = ttk.Combobox(date_inner_frame, textvariable=self.month_var, values=months, width=10, state="readonly")
+        self.month_cb.pack(side=tk.LEFT, padx=1)
+        
+        # Year
+        current_year = int(datetime.now().strftime("%Y"))
+        self.year_var = tk.StringVar(value=str(current_year))
+        years = [str(y) for y in range(current_year - 5, current_year + 2)]
+        self.year_cb = ttk.Combobox(date_inner_frame, textvariable=self.year_var, values=years, width=5, state="readonly")
+        self.year_cb.pack(side=tk.LEFT, padx=1)
+        
+        ttk.Button(date_inner_frame, text="Set Today", command=self.set_today).pack(side=tk.LEFT, padx=5)
+
+        # Download Selection Section
+        select_frame = ttk.LabelFrame(self.dashboard_tab, text="Select Downloads", padding="2")
+        select_frame.pack(fill=tk.BOTH, expand=True, pady=1)
+        
+        # Default downloads (Always selected)
+        default_frame = ttk.Frame(select_frame)
+        default_frame.pack(fill=tk.X, pady=(0, 1))
+        ttk.Label(default_frame, text="Default (Always Downloaded):", font=("Arial", 9, "bold")).pack(anchor=tk.W)
+        ttk.Label(default_frame, text="• NIFTY 500, Market Indices", foreground="#555555").pack(anchor=tk.W, padx=5)
+        
+        # Optional downloads
+        opt_header_frame = ttk.Frame(select_frame)
+        opt_header_frame.pack(fill=tk.X, pady=(1, 0))
+        ttk.Label(opt_header_frame, text="Optional Downloads:", font=("Arial", 9, "bold")).pack(side=tk.LEFT)
+        
+        # Helper buttons
+        ttk.Button(opt_header_frame, text="Clear All", command=self.deselect_all, width=8).pack(side=tk.RIGHT)
+        ttk.Button(opt_header_frame, text="Select All", command=self.select_all, width=8).pack(side=tk.RIGHT, padx=2)
+        ttk.Button(opt_header_frame, text="Download Selected", command=self.download_optionals, width=16).pack(side=tk.RIGHT, padx=2)
+        
+        # Frame for checkboxes (Grid layout)
+        checkbox_frame = ttk.Frame(select_frame)
+        checkbox_frame.pack(fill=tk.BOTH, expand=True, pady=1)
+        
+        # Add checkboxes for direct URLs only
+        self.source_names = {}
+        for k in self.downloader.direct_urls.keys():
+            self.source_names[k] = k.replace('_', ' ').title()
+        
+        # Use grid layout for checkboxes (3 columns)
+        row = 0
+        col = 0
+        for key, name in self.source_names.items():
+            var = tk.BooleanVar(value=True) # Default checked
+            self.selected_downloads[key] = var
+            ttk.Checkbutton(checkbox_frame, text=name, variable=var).grid(row=row, column=col, sticky=tk.W, padx=5, pady=1)
+            
+            col += 1
+            if col > 2: # 3 columns
+                col = 0
+                row += 1
+
+        # Optional Progress Bar (Inside Select Frame)
+        opt_prog_frame = ttk.Frame(select_frame)
+        opt_prog_frame.pack(fill=tk.X, pady=(5, 1), padx=2)
+        
+        ttk.Label(opt_prog_frame, text="Optional Progress:", font=("Arial", 8, "bold")).pack(anchor=tk.W)
+        
+        self.opt_progress_var = tk.IntVar(value=0)
+        self.opt_progress_bar = ttk.Progressbar(
+            opt_prog_frame,
+            variable=self.opt_progress_var,
+            maximum=100,
+            mode='determinate'
+        )
+        self.opt_progress_bar.pack(fill=tk.X, pady=1)
+        
+        self.opt_progress_label = ttk.Label(
+            opt_prog_frame, 
+            text="Ready", 
+            font=("Arial", 8),
+            foreground="#000000"
+        )
+        self.opt_progress_label.pack(anchor=tk.W)
+
+        self.opt_schedule_label = ttk.Label(
+            opt_prog_frame,
+            text=f"Auto-download runs daily at {self.downloader.optional_download_time}",
+            font=("Arial", 7),
+            foreground="#555555"
+        )
+        self.opt_schedule_label.pack(anchor=tk.W, pady=(0, 2))
+
         # Time Schedule Section - compact
-        time_frame = ttk.LabelFrame(main_frame, text="Schedule Times", padding="8")
-        time_frame.pack(fill=tk.X, pady=5)
+        time_frame = ttk.LabelFrame(self.dashboard_tab, text="Schedule Times", padding="2")
+        time_frame.pack(fill=tk.X, pady=1)
         
         # Auto Mode Checkbox
         self.auto_mode_var = tk.BooleanVar(value=self.downloader.auto_mode)
@@ -667,20 +1063,20 @@ class DownloaderGUI:
             variable=self.auto_mode_var,
             command=self.toggle_auto_mode
         )
-        auto_mode_check.pack(anchor=tk.W, padx=3, pady=3)
+        auto_mode_check.pack(anchor=tk.W, padx=3, pady=1)
         
-        ttk.Label(time_frame, text="Times (HH:MM, 24-hour, comma separated):", font=("Arial", 8)).pack(anchor=tk.W, padx=3, pady=2)
+        ttk.Label(time_frame, text="Times (HH:MM, 24-hour, comma separated):", font=("Arial", 8)).pack(anchor=tk.W, padx=3, pady=1)
         
         # Display current times
         self.time_var = tk.StringVar(value=", ".join(self.downloader.scheduled_times))
         time_entry = ttk.Entry(time_frame, textvariable=self.time_var, width=40)
-        time_entry.pack(padx=3, pady=2, fill=tk.X)
+        time_entry.pack(padx=3, pady=1, fill=tk.X)
         
         ttk.Label(time_frame, text="Example: 09:30, 12:00, 15:30", font=("Arial", 7), foreground="gray").pack(anchor=tk.W, padx=3)
-        
+
         # Control Buttons - compact
-        button_frame = ttk.Frame(main_frame)
-        button_frame.pack(pady=8)
+        button_frame = ttk.Frame(self.dashboard_tab)
+        button_frame.pack(pady=3)
         
         self.start_btn = ttk.Button(
             button_frame,
@@ -688,7 +1084,7 @@ class DownloaderGUI:
             command=self.start_scheduler,
             width=18
         )
-        self.start_btn.pack(side=tk.LEFT, padx=3)
+        self.start_btn.pack(side=tk.LEFT, padx=2)
         
         self.stop_btn = ttk.Button(
             button_frame,
@@ -697,21 +1093,23 @@ class DownloaderGUI:
             state=tk.DISABLED,
             width=18
         )
-        self.stop_btn.pack(side=tk.LEFT, padx=3)
+        self.stop_btn.pack(side=tk.LEFT, padx=2)
         
         # Manual Download Button
-        manual_btn = ttk.Button(
+        self.manual_btn = ttk.Button(
             button_frame,
             text="Download Now",
             command=self.manual_download,
-            width=18
+            width=25
         )
-        manual_btn.pack(side=tk.LEFT, padx=3)
+        self.manual_btn.pack(side=tk.LEFT, padx=2)
         
         # Progress Bar Section - compact
-        progress_frame = ttk.LabelFrame(main_frame, text="Progress", padding="8")
-        progress_frame.pack(fill=tk.X, pady=5)
+        progress_frame = ttk.LabelFrame(self.dashboard_tab, text="Main Progress", padding="2")
+        progress_frame.pack(fill=tk.X, pady=1)
         
+        # Main Progress (NIFTY 500 & Indices)
+        ttk.Label(progress_frame, text="Main (NIFTY 500 & Indices):", font=("Arial", 8, "bold")).pack(anchor=tk.W, padx=2)
         self.progress_var = tk.IntVar(value=0)
         self.progress_bar = ttk.Progressbar(
             progress_frame,
@@ -720,47 +1118,222 @@ class DownloaderGUI:
             mode='determinate',
             length=520
         )
-        self.progress_bar.pack(pady=3)
+        self.progress_bar.pack(pady=1, fill=tk.X, padx=2)
         
-        # Progress status label - black color instead of blue
         self.progress_label = ttk.Label(
             progress_frame, 
             text="Ready", 
-            font=("Arial", 9, "bold"),
-            foreground="#000000"  # Changed from blue to black
+            font=("Arial", 8),
+            foreground="#000000"
         )
-        self.progress_label.pack(pady=3)
+        self.progress_label.pack(pady=(0, 2), anchor=tk.W, padx=2)
         
         # Info Label - shorter text to avoid cutoff
         info_label = ttk.Label(
-            main_frame,
+            self.dashboard_tab,
             text="Keep window open for scheduled downloads (Mon-Fri only)",
             font=("Arial", 8, "italic"),
             foreground="#555555"
         )
         info_label.pack(pady=2)
+
+        # --- SETTINGS TAB ---
+
+        # Download Path Section - Dynamic Source Selection
+        path_frame = ttk.LabelFrame(self.settings_tab, text="Download Locations", padding="2")
+        path_frame.pack(fill=tk.X, pady=5)
+        
+        # Source Selection
+        path_inner_frame = ttk.Frame(path_frame)
+        path_inner_frame.pack(fill=tk.X, pady=1)
+        
+        ttk.Label(path_inner_frame, text="Source:", width=10).pack(side=tk.LEFT, padx=2)
+        
+        # Get all source keys
+        all_source_keys = ['nifty500', 'market_indices'] + list(self.downloader.direct_urls.keys())
+        # Create readable names mapping
+        all_source_names = {k: k.replace('_', ' ').title() for k in all_source_keys}
+        all_source_names['nifty500'] = "NIFTY 500"
+        all_source_names['market_indices'] = "Market Indices"
+        
+        # Reverse mapping for lookup
+        self.name_to_key = {v: k for k, v in all_source_names.items()}
+        
+        self.selected_source_name = tk.StringVar(value=all_source_names['nifty500'])
+        self.source_cb = ttk.Combobox(path_inner_frame, textvariable=self.selected_source_name, 
+                                     values=list(all_source_names.values()), width=30, state="readonly")
+        self.source_cb.pack(side=tk.LEFT, padx=2)
+        self.source_cb.bind("<<ComboboxSelected>>", self.on_source_change)
+        
+        # Path Entry
+        path_entry_frame = ttk.Frame(path_frame)
+        path_entry_frame.pack(fill=tk.X, pady=1)
+        
+        ttk.Label(path_entry_frame, text="Path:", width=10).pack(side=tk.LEFT, padx=2)
+        self.current_path_var = tk.StringVar(value=self.downloader.download_paths['nifty500'])
+        self.path_entry = ttk.Entry(path_entry_frame, textvariable=self.current_path_var, width=45)
+        self.path_entry.pack(side=tk.LEFT, padx=2, fill=tk.X, expand=True)
+        
+        ttk.Button(path_entry_frame, text="Browse", command=self.browse_current_folder, width=8).pack(side=tk.LEFT, padx=2)
+        
+
     
-    def browse_folder(self, source_key):
-        """Browse for download folder for a specific source"""
-        folder = filedialog.askdirectory()
-        if folder:
-            if source_key == 'nifty500':
-                self.nifty_path_var.set(folder)
-            elif source_key == 'market_indices':
-                self.market_path_var.set(folder)
+    def set_today(self):
+        """Set date picker to today"""
+        now = datetime.now()
+        self.day_var.set(now.strftime("%d"))
+        self.month_var.set(now.strftime("%B"))
+        self.year_var.set(now.strftime("%Y"))
+        
+    def select_all(self):
+        """Select all optional downloads"""
+        for var in self.selected_downloads.values():
+            var.set(True)
+            
+    def deselect_all(self):
+        """Deselect all optional downloads"""
+        for var in self.selected_downloads.values():
+            var.set(False)
+        
+    def on_source_change(self, event):
+        """Update path entry when source changes"""
+        name = self.selected_source_name.get()
+        key = self.name_to_key.get(name)
+        if key:
+            path = self.downloader.download_paths.get(key, "")
+            self.current_path_var.set(path)
+            
+    def browse_current_folder(self):
+        """Browse folder for currently selected source"""
+        name = self.selected_source_name.get()
+        key = self.name_to_key.get(name)
+        if key:
+            folder = filedialog.askdirectory()
+            if folder:
+                self.current_path_var.set(folder)
+                self.downloader.download_paths[key] = folder
+                self.downloader.save_config()
     
-    def update_progress(self, value, message=""):
+    def get_selected_date(self):
+        """Get datetime object from date picker"""
+        try:
+            day = int(self.day_var.get())
+            month_name = self.month_var.get()
+            year = int(self.year_var.get())
+            
+            month_map = {
+                "January": 1, "February": 2, "March": 3, "April": 4, "May": 5, "June": 6,
+                "July": 7, "August": 8, "September": 9, "October": 10, "November": 11, "December": 12
+            }
+            month = month_map.get(month_name, 1)
+            
+            return datetime(year, month, day)
+        except Exception as e:
+            logging.error(f"Invalid date: {e}")
+            return datetime.now()
+
+    def manual_download(self):
+        """Start manual download of defaults (NIFTY 500 & Indices)"""
+        # Update target date from GUI (though defaults use current date)
+        self.downloader.target_date = self.get_selected_date()
+        
+        # Update scheduled times from input
+        times_str = self.time_var.get()
+        valid_times = []
+        for t in times_str.split(','):
+            t = t.strip()
+            if self.validate_time(t):
+                valid_times.append(t)
+        
+        if valid_times:
+            self.downloader.scheduled_times = valid_times
+            self.downloader.save_config()
+        
+        # Disable buttons
+        self.start_btn.config(state=tk.DISABLED)
+        self.stop_btn.config(state=tk.DISABLED)
+        if hasattr(self, 'manual_btn'):
+            self.manual_btn.config(state=tk.DISABLED)
+        
+        # Run download in thread (Defaults Only)
+        threading.Thread(target=self.run_download_thread, args=('defaults',)).start()
+
+    def download_optionals(self):
+        """Start manual download of selected optional files"""
+        # Update target date from GUI
+        selected_date = self.get_selected_date()
+        self.downloader.target_date = selected_date
+        
+        # Check if selected date is in the future
+        now = datetime.now()
+        # Compare dates only (strip time)
+        if selected_date.date() > now.date():
+            messagebox.showwarning(
+                "Future Date Selected", 
+                f"Cannot download files for {selected_date.strftime('%d-%b-%Y')}.\n\nData is not available for future dates."
+            )
+            return
+        
+        # Update selected downloads
+        self.downloader.enabled_downloads = []
+        for key, var in self.selected_downloads.items():
+            if var.get():
+                self.downloader.enabled_downloads.append(key)
+        
+        # Save config to remember selections
+        self.downloader.save_config()
+        
+        if not self.downloader.enabled_downloads:
+            messagebox.showwarning("No Selection", "Please select at least one optional download.")
+            return
+
+        # Disable buttons
+        self.start_btn.config(state=tk.DISABLED)
+        self.stop_btn.config(state=tk.DISABLED)
+        if hasattr(self, 'manual_btn'):
+            self.manual_btn.config(state=tk.DISABLED)
+            
+        # Run download in thread (Optionals Only)
+        threading.Thread(target=self.run_download_thread, args=('optionals',)).start()
+    
+    def update_progress(self, value, message="", bar="main"):
         """Update progress bar and message"""
-        self.progress_var.set(value)
-        # Show percentage and message
         display_text = f"[{value}%] {message}" if message else f"{value}%"
-        self.progress_label.config(text=display_text)
+        
+        if bar == "main":
+            self.progress_var.set(value)
+            self.progress_label.config(text=display_text)
+        elif bar == "optional":
+            self.opt_progress_var.set(value)
+            self.opt_progress_label.config(text=display_text)
+            
         self.root.update_idletasks()
     
     def reset_progress(self):
-        """Reset progress bar to 0"""
+        """Reset progress bar to 0 and re-enable buttons"""
         self.progress_var.set(0)
         self.progress_label.config(text="Ready")
+        self.opt_progress_var.set(0)
+        self.opt_progress_label.config(text="Ready")
+        
+        # Re-enable buttons if scheduler is not running
+        if not self.downloader.is_running:
+            self.start_btn.config(state=tk.NORMAL)
+            self.stop_btn.config(state=tk.DISABLED)
+            # Manual download button is always enabled when scheduler is not running
+            # We need to find the manual button reference. 
+            # It wasn't stored in self.manual_btn in create_widgets, let's fix that too.
+            if hasattr(self, 'manual_btn'):
+                self.manual_btn.config(state=tk.NORMAL)
+        else:
+            # If scheduler is running, stop button should be enabled
+            self.stop_btn.config(state=tk.NORMAL)
+            self.start_btn.config(state=tk.DISABLED)
+            # Manual download might be disabled during scheduled run? 
+            # Usually we allow manual download even if scheduler is waiting.
+            if hasattr(self, 'manual_btn'):
+                self.manual_btn.config(state=tk.NORMAL)
+
         self.root.update_idletasks()
     
     def validate_time(self, time_str):
@@ -790,9 +1363,14 @@ class DownloaderGUI:
             return
         
         # Update downloader settings
-        self.downloader.download_paths['nifty500'] = self.nifty_path_var.get()
-        self.downloader.download_paths['market_indices'] = self.market_path_var.get()
         self.downloader.scheduled_times = result  # result contains the list of times
+        
+        # Update enabled downloads
+        self.downloader.enabled_downloads = []
+        for key, var in self.selected_downloads.items():
+            if var.get():
+                self.downloader.enabled_downloads.append(key)
+                
         self.downloader.save_config()
         
         # Create download directories if they don't exist
@@ -830,17 +1408,11 @@ class DownloaderGUI:
         self.start_btn.config(state=tk.NORMAL)
         self.stop_btn.config(state=tk.DISABLED)
     
-    def manual_download(self):
-        # Update download paths
-        self.downloader.download_paths['nifty500'] = self.nifty_path_var.get()
-        self.downloader.download_paths['market_indices'] = self.market_path_var.get()
-        
-        # Run download in a separate thread to avoid freezing GUI
-        download_thread = threading.Thread(target=self._run_manual_download, daemon=True)
-        download_thread.start()
-    
-    def _run_manual_download(self):
-        self.downloader.download_data()
+    def run_download_thread(self, mode='all'):
+        self.downloader.download_data(mode=mode)
+        # Re-enable buttons after download
+        self.root.after(0, lambda: self.start_btn.config(state=tk.NORMAL))
+        self.root.after(0, lambda: self.stop_btn.config(state=tk.DISABLED))
     
     def toggle_auto_mode(self):
         """Toggle auto mode and save state"""

@@ -5,9 +5,6 @@ import schedule
 import logging
 from datetime import datetime
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
@@ -22,8 +19,8 @@ class NSEDownloader:
     def __init__(self, gui=None):
         # URLs for both websites
         self.urls = {
-            'nifty500': "https://www.nseindia.com/market-data/live-equity-market?symbol=NIFTY%20500",
-            'market_indices': "https://www.nseindia.com/market-data/live-market-indices"
+            'nifty500': "https://www.nseindia.com/api/equity-stockIndices?csv=true&index=NIFTY%20500&selectValFormat=crores",
+            'market_indices': "https://www.nseindia.com/api/allIndices?csv=true"
         }
 
         # Direct download URLs with placeholders
@@ -277,147 +274,7 @@ class NSEDownloader:
             
         return formatted_url
 
-    def download_from_source(self, driver, source_name, url, download_path, progress_offset=0, extra_wait=0):
-        """Download from a specific NSE source
-        
-        Args:
-            driver: Selenium WebDriver instance
-            source_name: Name of the source (e.g., 'NIFTY500', 'Market_Indices')
-            url: URL to download from
-            download_path: Path to save downloads
-            progress_offset: Offset for progress bar (0 or 50)
-            extra_wait: Extra seconds to wait after clicking download (for slow sites)
-        """
-        try:
-            # CRITICAL: Set download path for this specific source via CDP
-            abs_download_path = os.path.abspath(download_path)
-            logging.info(f"Setting download path to: {abs_download_path}")
-            
-            # Update progress: Setting download path
-            if self.gui:
-                self.gui.update_progress(progress_offset + 15, f"Configuring download path for {source_name}...")
-            
-            driver.execute_cdp_cmd("Browser.setDownloadBehavior", {
-                "behavior": "allow",
-                "downloadPath": abs_download_path,
-                "eventsEnabled": True
-            })
-            driver.execute_cdp_cmd("Page.setDownloadBehavior", {
-                "behavior": "allow",
-                "downloadPath": abs_download_path
-            })
-            time.sleep(1)  # Brief wait for CDP command to take effect
-            
-            # Update progress: Navigating
-            if self.gui:
-                self.gui.update_progress(progress_offset + 20, f"Navigating to {source_name} page...")
-            
-            # Visit the target page
-            logging.info(f"Navigating to {source_name} page...")
-            driver.get(url)
-            
-            # Update progress: Page loading
-            if self.gui:
-                self.gui.update_progress(progress_offset + 25, f"Loading {source_name} page...")
-            
-            # Wait for page to load and dynamic content
-            logging.info("Waiting for page to load...")
-            time.sleep(10)
-            
-            # Update progress: Scrolling page
-            if self.gui:
-                self.gui.update_progress(progress_offset + 28, f"Scrolling page for {source_name}...")
-            
-            # Execute JavaScript to scroll if needed
-            driver.execute_script("window.scrollTo(0, 200);")
-            time.sleep(2)
-            
-            # Update progress: Finding button
-            if self.gui:
-                self.gui.update_progress(progress_offset + 30, f"Searching for download button...")
-            
-            # Wait for and click the download button
-            wait = WebDriverWait(driver, 30)
-            
-            # Prioritize the exact span element with text verification
-            selectors = [
-                (By.XPATH, "//span[@id='dwldcsv' and text()='Download (.csv)']"),  # Most specific
-                (By.ID, "dwldcsv"),  # Exact button ID
-                (By.XPATH, "//span[@id='dwldcsv']"),
-                (By.XPATH, "//*[@id='dwldcsv']"),
-            ]
-            
-            download_button = None
-            for i, selector in enumerate(selectors):
-                try:
-                    by_method, selector_value = selector
-                    logging.info(f"Trying selector {i+1}/{len(selectors)}: {by_method} = {selector_value}")
-                    download_button = wait.until(
-                        EC.element_to_be_clickable(selector)
-                    )
-                    element_html = download_button.get_attribute('outerHTML')
-                    if element_html:
-                        logging.info(f"✅ Found element for {source_name}: {element_html[:100]}")
-                        print(f"✅ Found element for {source_name}")
-                    
-                    # Update progress: Button found
-                    if self.gui:
-                        self.gui.update_progress(progress_offset + 33, f"Download button found for {source_name}!")
-                    break
-                except Exception as e:
-                    logging.debug(f"Selector failed: {selector} - {str(e)}")
-                    continue
-            
-            # Update progress: Clicking button
-            if self.gui:
-                self.gui.update_progress(progress_offset + 35, f"Clicking download button...")
-            
-            if download_button:
-                # Scroll to element
-                driver.execute_script("arguments[0].scrollIntoView(true);", download_button)
-                time.sleep(1)
-                
-                # Try multiple click methods
-                click_methods = [
-                    ("Normal click", lambda btn: btn.click()),
-                    ("JavaScript click", lambda btn: driver.execute_script("arguments[0].click();", btn)),
-                ]
-                
-                for method, click_func in click_methods:
-                    try:
-                        click_func(download_button)
-                        logging.info(f"✅ Clicked download button for {source_name} using method: {method}")
-                        print(f"Download button clicked for {source_name}!")
-                        
-                        # Update progress: Button clicked
-                        if self.gui:
-                            self.gui.update_progress(progress_offset + 37, f"Button clicked! Initiating download...")
-                        
-                        # Wait to let download start (extra wait for slow sites)
-                        wait_time = 3 + extra_wait
-                        logging.info(f"Waiting {wait_time} seconds for download to initiate...")
-                        
-                        # Update progress: Downloading
-                        if self.gui:
-                            self.gui.update_progress(progress_offset + 40, f"Downloading {source_name} file...")
-                        
-                        time.sleep(wait_time)
-                        break
-                    except Exception as e:
-                        logging.warning(f"Click method '{method}' failed for {source_name}: {e}")
-                        continue
-                
-                return True
-            else:
-                logging.error(f"Could not find download button for {source_name}")
-                return False
-                
-        except Exception as e:
-            logging.error(f"Error downloading from {source_name}: {str(e)}")
-            print(f"Error downloading from {source_name}: {str(e)}")
-            return False
-    
-    def download_direct_file(self, driver, source_name, url, download_path, progress_offset=0):
+    def download_direct_file(self, driver, source_name, url, download_path, progress_offset=0, progress_bar="optional"):
         """Download a file directly from a URL using HTTP requests
 
         Args:
@@ -435,7 +292,7 @@ class NSEDownloader:
             logging.info(f"Direct download for {source_name} to: {abs_download_path}")
 
             if self.gui:
-                self.gui.update_progress(progress_offset, f"Downloading {source_name}...", bar="optional")
+                self.gui.update_progress(progress_offset, f"Downloading {source_name}...", bar=progress_bar)
 
             session = requests.Session()
 
@@ -451,7 +308,8 @@ class NSEDownloader:
             headers.update({
                 "Referer": "https://www.nseindia.com/",
                 "Accept": "*/*",
-                "Accept-Encoding": "gzip, deflate, br",
+                # Restrict to gzip/deflate so we avoid Brotli-encoded CSV corruption
+                "Accept-Encoding": "gzip, deflate",
             })
 
             response = session.get(url, headers=headers, timeout=60, allow_redirects=True)
@@ -515,47 +373,42 @@ class NSEDownloader:
             
             success_nifty500 = False
             if mode in ['all', 'defaults']:
-                # Always download NIFTY 500 in defaults mode
                 logging.info("=" * 50)
-                logging.info("DOWNLOADING FROM NIFTY 500")
+                logging.info("DIRECT DOWNLOAD: NIFTY 500")
                 logging.info("=" * 50)
-                success_nifty500 = self.download_from_source(
-                    driver, 
-                    "NIFTY 500", 
-                    self.urls['nifty500'], 
+
+                if self.gui:
+                    self.gui.update_progress(30, "Preparing NIFTY 500 download...", bar="main")
+
+                nifty_url = self.urls['nifty500']
+                print(f"Downloading NIFTY 500 from: {nifty_url}")
+                success_nifty500 = self.download_direct_file(
+                    driver,
+                    'nifty500',
+                    nifty_url,
                     self.download_paths['nifty500'],
-                    progress_offset=0,
-                    extra_wait=0  # Standard wait for NIFTY 500
+                    progress_offset=40,
+                    progress_bar='main'
                 )
-            
+
             success_market = False
             if mode in ['all', 'defaults']:
-                # Always download Market Indices in defaults mode
                 logging.info("=" * 50)
-                logging.info("DOWNLOADING FROM MARKET INDICES")
+                logging.info("DIRECT DOWNLOAD: MARKET INDICES")
                 logging.info("=" * 50)
-                
-                # Update progress: Preparing for second download
+
                 if self.gui:
-                    self.gui.update_progress(50, "Preparing for Market Indices download...", bar="main")
-                
-                # Re-establish session for second download (longer wait to avoid blocking)
-                logging.info("Re-establishing session for Market Indices...")
-                driver.get("https://www.nseindia.com")
-                
-                # Update progress: Re-establishing session
-                if self.gui:
-                    self.gui.update_progress(52, "Re-establishing session for Market Indices...", bar="main")
-                
-                time.sleep(8)  # Longer wait to avoid being blocked
-                
-                success_market = self.download_from_source(
-                    driver, 
-                    "Market Indices", 
-                    self.urls['market_indices'], 
+                    self.gui.update_progress(60, "Preparing Market Indices download...", bar="main")
+
+                market_url = self.urls['market_indices']
+                print(f"Downloading Market Indices from: {market_url}")
+                success_market = self.download_direct_file(
+                    driver,
+                    'market_indices',
+                    market_url,
                     self.download_paths['market_indices'],
-                    progress_offset=50,
-                    extra_wait=5  # Extra 5 seconds wait for Market Indices (slower download)
+                    progress_offset=70,
+                    progress_bar='main'
                 )
             
             # Process direct downloads
@@ -894,7 +747,12 @@ class DownloaderGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("NSE Data Downloader")
-        self.root.geometry("650x680")  # Further reduced height for 3-column layout
+        self.root.geometry("900x640")  # High-res but tighter height to reduce unused space
+        # Increase Tk scaling slightly to render crisp UI on HD screens
+        try:
+            self.root.tk.call('tk', 'scaling', 1.25)
+        except Exception:
+            pass
         self.root.resizable(True, True)  # Allow resizing
         
         self.downloader = NSEDownloader(gui=self)
@@ -931,11 +789,11 @@ class DownloaderGUI:
         
         # Main frame - reduced padding
         main_frame = ttk.Frame(self.root, padding="2")
-        main_frame.pack(fill=tk.BOTH, expand=True)
+        main_frame.pack(fill=tk.X, expand=False)
         
         # Create Notebook (Tabs)
         self.notebook = ttk.Notebook(main_frame)
-        self.notebook.pack(fill=tk.BOTH, expand=True, pady=2)
+        self.notebook.pack(fill=tk.X, expand=False, pady=2)
         
         # Create Tabs
         self.dashboard_tab = ttk.Frame(self.notebook, padding=2)
@@ -980,7 +838,7 @@ class DownloaderGUI:
 
         # Download Selection Section
         select_frame = ttk.LabelFrame(self.dashboard_tab, text="Select Downloads", padding="2")
-        select_frame.pack(fill=tk.BOTH, expand=True, pady=1)
+        select_frame.pack(fill=tk.X, pady=1)
         
         # Default downloads (Always selected)
         default_frame = ttk.Frame(select_frame)
@@ -1000,7 +858,7 @@ class DownloaderGUI:
         
         # Frame for checkboxes (Grid layout)
         checkbox_frame = ttk.Frame(select_frame)
-        checkbox_frame.pack(fill=tk.BOTH, expand=True, pady=1)
+        checkbox_frame.pack(fill=tk.X, pady=1)
         
         # Add checkboxes for direct URLs only
         self.source_names = {}

@@ -17,7 +17,7 @@ A powerful desktop application to automatically download **NIFTY 500**, **Market
 
 ### 🎯 **Ready-to-Use Windows Executable**
 
-**Latest Version: v3.2** | **Size: ~82 MB** | **Platform: Windows 10/11**
+**Latest Version: v3.3** | **Size: ~24 MB** | **Platform: Windows 10/11**
 
 <p>
   <a href="https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_Data_Downloader.exe">
@@ -42,6 +42,12 @@ _Or browse the [releases folder](releases/) for all versions_
 ## ✨ What's New
 
 <div align="center">
+
+### v3.3 Highlights
+
+- Fixed OI Spurts CSV corruption by forcing gzip/deflate responses
+- HD GUI tweaks (larger default window, tighter spacing)
+- Rebuilt Windows EXE
 
 <table>
 <tr>
@@ -165,26 +171,26 @@ The application now fetches the following reports automatically:
 
 </div>
 
-| Feature | Description |
-|---------|-------------|
-| 📥 **Multi-Source Downloads** | Download from 14+ NSE endpoints simultaneously |
-| 📅 **Weekend-Aware Scheduling** | Auto-skips Saturday & Sunday (market closed) |
-| 📂 **Smart Organization** | Files are sorted into relevant folders automatically |
-| 🔇 **Hidden Browser Mode** | Completely background operation - no visible window |
-| 📊 **Real-time Progress** | Feedback on which report is currently downloading |
-| ⏰ **Multiple Schedule Times** | Set unlimited times (e.g., `09:30, 15:30`) |
-| 🎯 **Manual Download** | Instant downloads with a single click (works any day) |
-| 🤖 **Auto Mode** | Auto-start scheduler during business hours (8 AM - 8 PM) |
-| Feature | Description |
-|---------|-------------|
-| 📥 **Multi-Source Downloads** | Download from 14+ NSE endpoints simultaneously |
-| 📅 **Weekend-Aware Scheduling** | Auto-skips Saturday & Sunday (market closed) |
-| 📂 **Smart Organization** | Files are sorted into relevant folders automatically |
-| 🔇 **Hidden Browser Mode** | Completely background operation - no visible window |
-| 📊 **Real-time Progress** | Feedback on which report is currently downloading |
-| ⏰ **Multiple Schedule Times** | Set unlimited times (e.g., `09:30, 15:30`) |
-| 🎯 **Manual Download** | Instant downloads with a single click (works any day) |
-| 🤖 **Auto Mode** | Auto-start scheduler during business hours (8 AM - 8 PM) |
+| Feature                         | Description                                              |
+| ------------------------------- | -------------------------------------------------------- |
+| 📥 **Multi-Source Downloads**   | Download from 14+ NSE endpoints simultaneously           |
+| 📅 **Weekend-Aware Scheduling** | Auto-skips Saturday & Sunday (market closed)             |
+| 📂 **Smart Organization**       | Files are sorted into relevant folders automatically     |
+| 🔇 **Hidden Browser Mode**      | Completely background operation - no visible window      |
+| 📊 **Real-time Progress**       | Feedback on which report is currently downloading        |
+| ⏰ **Multiple Schedule Times**  | Set unlimited times (e.g., `09:30, 15:30`)               |
+| 🎯 **Manual Download**          | Instant downloads with a single click (works any day)    |
+| 🤖 **Auto Mode**                | Auto-start scheduler during business hours (8 AM - 8 PM) |
+| Feature                         | Description                                              |
+| ---------                       | -------------                                            |
+| 📥 **Multi-Source Downloads**   | Download from 14+ NSE endpoints simultaneously           |
+| 📅 **Weekend-Aware Scheduling** | Auto-skips Saturday & Sunday (market closed)             |
+| 📂 **Smart Organization**       | Files are sorted into relevant folders automatically     |
+| 🔇 **Hidden Browser Mode**      | Completely background operation - no visible window      |
+| 📊 **Real-time Progress**       | Feedback on which report is currently downloading        |
+| ⏰ **Multiple Schedule Times**  | Set unlimited times (e.g., `09:30, 15:30`)               |
+| 🎯 **Manual Download**          | Instant downloads with a single click (works any day)    |
+| 🤖 **Auto Mode**                | Auto-start scheduler during business hours (8 AM - 8 PM) |
 
 <div align="center">
 

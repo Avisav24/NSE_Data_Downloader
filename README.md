@@ -225,8 +225,6 @@ Examples:
 
 ### 📋 Requirements
 
-# <<<<<<< HEAD
-
 - **Scheduled Downloads**: Automatic daily downloads at your configured times (Monday-Friday only)
 - **Manual Download**: Download data instantly any day with a single click
 - **Custom Download Locations**: Choose separate paths for each data source

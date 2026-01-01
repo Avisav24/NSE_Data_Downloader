@@ -50,19 +50,19 @@ class NSEDownloader:
         self.download_paths = {
             'nifty500': os.path.join(nse_base_path, "NIFTY500"),
             'market_indices': os.path.join(nse_base_path, "Market_Indices"),
-            'oi_spurts': os.path.join(eod_base_path, "OI_Spurts"),
-            'combine_oi': os.path.join(eod_base_path, "Combine_OI"),
-            'pe_detail': os.path.join(eod_base_path, "PE_Detail"),
-            'cm_high_low': os.path.join(eod_base_path, "CM_High_Low"),
-            'sec_bhavdata': os.path.join(eod_base_path, "Sec_Bhavdata"),
-            'block_deals': os.path.join(eod_base_path, "Block_Deals"),
-            'bulk_deals': os.path.join(eod_base_path, "Bulk_Deals"),
-            'bhavcopy_cm': os.path.join(eod_base_path, "BhavCopy_CM"),
-            'ind_close': os.path.join(eod_base_path, "Ind_Close"),
-            'fao_participant_vol': os.path.join(eod_base_path, "FAO_Participant_Vol"),
-            'fao_participant_oi': os.path.join(eod_base_path, "FAO_Participant_OI"),
-            'fii_stats': os.path.join(eod_base_path, "FII_Stats"),
-            'bhavcopy_fo': os.path.join(eod_base_path, "BhavCopy_FO")
+            'oi_spurts': eod_base_path,
+            'combine_oi': eod_base_path,
+            'pe_detail': eod_base_path,
+            'cm_high_low': eod_base_path,
+            'sec_bhavdata': eod_base_path,
+            'block_deals': eod_base_path,
+            'bulk_deals': eod_base_path,
+            'bhavcopy_cm': eod_base_path,
+            'ind_close': eod_base_path,
+            'fao_participant_vol': eod_base_path,
+            'fao_participant_oi': eod_base_path,
+            'fii_stats': eod_base_path,
+            'bhavcopy_fo': eod_base_path
         }
         
         self.scheduled_times = ["09:30"]  # Now supports multiple times
@@ -107,13 +107,15 @@ class NSEDownloader:
                             if not current_path:
                                 continue
 
-                            normalized = current_path.lower()
-                            if "nse_data" in normalized and "eod_data" not in normalized:
-                                folder_name = os.path.basename(os.path.normpath(current_path))
-                                new_path = os.path.join(eod_base_path, folder_name)
-                                self.download_paths[key] = new_path
+                            normalized = os.path.normpath(current_path).lower()
+                            normalized_base = os.path.normpath(eod_base_path).lower()
+
+                            # If path is not the base path, but is inside EOD_Data or NSE_Data (legacy)
+                            # We flatten it to the root EOD_Data folder
+                            if normalized != normalized_base and ("eod_data" in normalized or "nse_data" in normalized):
+                                self.download_paths[key] = eod_base_path
                                 migrated = True
-                                logging.info(f"Migrated path for {key} to EOD_Data: {new_path}")
+                                logging.info(f"Migrated path for {key} to EOD_Data root: {eod_base_path}")
 
                     # Support both old single time and new multiple times
                     if 'scheduled_times' in config:

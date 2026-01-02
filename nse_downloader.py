@@ -346,6 +346,10 @@ class NSEDownloader:
         mode: 'all', 'defaults' (NIFTY500/Indices), 'optionals' (Selected files)
         """
         driver = None
+        # Record download start time to pass to rename function
+        import time as time_module
+        download_start_time = time_module.time()
+        
         try:
             # Determine which progress bar to use for general updates
             target_bar = "optional" if mode == 'optionals' else "main"
@@ -389,7 +393,7 @@ class NSEDownloader:
                     'nifty500',
                     nifty_url,
                     self.download_paths['nifty500'],
-                    progress_offset=40,
+                    progress_offset=35,
                     progress_bar='main'
                 )
 
@@ -409,7 +413,7 @@ class NSEDownloader:
                     'market_indices',
                     market_url,
                     self.download_paths['market_indices'],
-                    progress_offset=70,
+                    progress_offset=75,
                     progress_bar='main'
                 )
             
@@ -427,8 +431,8 @@ class NSEDownloader:
                         logging.info(f"DOWNLOADING {key.upper()}")
                         logging.info("=" * 50)
                         
-                        # Calculate progress (0 to 100 for optional bar)
-                        progress = int((i / total_direct) * 100)
+                        # Calculate progress (0 to 75 for optional bar)
+                        progress = int((i / total_direct) * 75)
                         
                         # Format URL with target date
                         formatted_url = self.get_formatted_url(url, self.target_date)
@@ -458,9 +462,7 @@ class NSEDownloader:
             if mode in ['all', 'defaults']:
                 if success_nifty500:
                     # Update progress: Processing NIFTY 500 file
-                    if self.gui:
-                        self.gui.update_progress(92, "Renaming NIFTY 500 file...", bar="main")
-                    renamed = self.rename_downloaded_file('nifty500', self.download_paths['nifty500'])
+                    renamed = self.rename_downloaded_file('nifty500', self.download_paths['nifty500'], skip_stability_check=True, progress_start=76, progress_end=88, progress_bar="main", download_start_time=download_start_time)
                     if renamed:
                         renamed_files.append(renamed)
                     else:
@@ -470,9 +472,7 @@ class NSEDownloader:
             
                 if success_market:
                     # Update progress: Processing Market Indices file
-                    if self.gui:
-                        self.gui.update_progress(95, "Renaming Market Indices file...", bar="main")
-                    renamed = self.rename_downloaded_file('market_indices', self.download_paths['market_indices'])
+                    renamed = self.rename_downloaded_file('market_indices', self.download_paths['market_indices'], skip_stability_check=True, progress_start=88, progress_end=100, progress_bar="main", download_start_time=download_start_time)
                     if renamed:
                         renamed_files.append(renamed)
                     else:
@@ -480,16 +480,20 @@ class NSEDownloader:
                 else:
                     failed_downloads.append("Market Indices")
             
-            # Rename direct downloads
+            # Rename optional downloads
             if hasattr(self, 'direct_urls') and mode in ['all', 'optionals']:
                 # Check which ones were supposed to be downloaded
                 enabled_keys = [k for k in self.direct_urls.keys() if k in self.enabled_downloads]
+                total_enabled = len(enabled_keys)
                 
-                for key in enabled_keys:
+                for idx, key in enumerate(enabled_keys):
                     success = direct_download_results.get(key, False)
                     if success:
-                        if self.gui:
-                            self.gui.update_progress(98, f"Renaming {key} file...", bar="optional")
+                        # Calculate dynamic progress for each file (76% to 100%)
+                        slice_size = 24.0 / max(total_enabled, 1)
+                        start_p = 76 + int(idx * slice_size)
+                        end_p = 76 + int((idx + 1) * slice_size)
+                        end_p = min(end_p, 100)
                         
                         # Determine extension based on URL
                         ext = '.csv'
@@ -498,7 +502,7 @@ class NSEDownloader:
                         elif '.xls' in self.direct_urls[key].lower():
                             ext = '.xls'
                             
-                        renamed = self.rename_downloaded_file(key, self.download_paths[key], extension=ext)
+                        renamed = self.rename_downloaded_file(key, self.download_paths[key], extension=ext, skip_stability_check=True, progress_start=start_p, progress_end=end_p, progress_bar="optional", download_start_time=download_start_time)
                         if renamed:
                             renamed_files.append(renamed)
                         else:
@@ -547,13 +551,18 @@ class NSEDownloader:
             if driver:
                 driver.quit()
     
-    def rename_downloaded_file(self, source_name, download_path, extension='.csv'):
+    def rename_downloaded_file(self, source_name, download_path, extension='.csv', skip_stability_check=True, progress_start=98, progress_end=100, progress_bar="optional", download_start_time=None):
         """Rename the most recently downloaded file with timestamp
         
         Args:
             source_name: Name of source
             download_path: Path where file was downloaded
             extension: File extension to look for (default: .csv)
+            skip_stability_check: Skip file size stability check (True for direct downloads)
+            progress_start: Starting progress percentage for this rename operation
+            progress_end: Ending progress percentage for this rename operation
+            progress_bar: Which progress bar to update ("main" or "optional")
+            download_start_time: Timestamp when downloads started (only files modified after this will be renamed)
         
         Returns:
             str: New filename if successful, None if failed
@@ -562,7 +571,7 @@ class NSEDownloader:
             logging.info(f"Searching for downloaded file from {source_name} in: {download_path}")
             
             # Wait for file to appear and download to complete
-            max_wait = 60
+            max_wait = 10 if skip_stability_check else 30  # Even faster for direct downloads
             wait_count = 0
             latest_file = None
             
@@ -578,18 +587,61 @@ class NSEDownloader:
             
             print(f"Checking paths for {source_name}: {paths_to_check}")
             
+            # Build filename pattern to match based on source_name
+            # This ensures we grab the correct file when multiple files of same type exist
+            # Support both the NSE original filename AND the fallback source_name
+            filename_patterns = {
+                'combine_oi': ['combineoi', 'combine_oi'],
+                'bhavcopy_fo': ['BhavCopy_NSE_FO', 'bhavcopy_fo'],
+                'bhavcopy_cm': ['BhavCopy_NSE_CM', 'bhavcopy_cm'],
+                'fii_stats': ['fii_stats'],
+                'pe_detail': ['PE_', 'pe_detail'],
+                'cm_high_low': ['cm_52_wk_High_low', 'cm_high_low'],
+                'sec_bhavdata': ['sec_bhavdata_full', 'sec_bhavdata'],
+                'ind_close': ['ind_close_all', 'ind_close'],
+                'fao_participant_vol': ['fao_participant_vol'],
+                'fao_participant_oi': ['fao_participant_oi'],
+                'block_deals': ['block', 'block_deals'],
+                'bulk_deals': ['bulk', 'bulk_deals'],
+                'oi_spurts': ['By-Underlying', 'oi_spurts']
+            }
+            expected_patterns = filename_patterns.get(source_name, [source_name])
+            
+            # Use provided download start time, or fall back to current time minus 2 minutes
+            import time as time_module
+            if download_start_time is None:
+                download_start_time = time_module.time() - 120  # Fallback: last 2 minutes
+            
             while wait_count < max_wait:
+                # Update progress dynamically based on elapsed time
+                if self.gui:
+                    progress_pct = progress_start + int((wait_count / max_wait) * (progress_end - progress_start))
+                    self.gui.update_progress(progress_pct, f"Searching for {source_name} file...", bar=progress_bar)
+                
                 found_in_path = None
-                # Look for ANY CSV file
+                # Look for files matching the extension AND expected filename pattern
                 for check_path in paths_to_check:
                     if not os.path.exists(check_path):
                         continue
                         
                     all_files = os.listdir(check_path)
                     # Look for files (case-insensitive) that aren't already renamed
-                    target_files = [f for f in all_files 
-                                if f.lower().endswith(extension.lower()) 
-                                and not ('_' in f and '-' in f and len(f) > 20)]  # Skip already renamed files
+                    # AND match the expected filename pattern for this source
+                    # Also check modification time to ensure we only rename files downloaded in this session
+                    target_files = []
+                    for f in all_files:
+                        if (f.lower().endswith(extension.lower()) 
+                            and not ('_' in f and '-' in f and len(f) > 20)  # Skip already renamed files
+                            and (not expected_patterns or any(pattern.lower() in f.lower() for pattern in expected_patterns))):  # Match any pattern
+                            # Check if file was modified after download started
+                            file_path = os.path.join(check_path, f)
+                            try:
+                                file_mtime = os.path.getmtime(file_path)
+                                # Only include files modified AFTER downloads started
+                                if file_mtime >= download_start_time:
+                                    target_files.append(f)
+                            except:
+                                pass
                     downloading = [f for f in all_files if f.endswith('.crdownload') or f.endswith('.tmp')]
                     
                     if wait_count == 0 or wait_count % 10 == 0:
@@ -603,21 +655,30 @@ class NSEDownloader:
                         
                         # Check if file size is stable (download completed)
                         if os.path.exists(potential_file):
-                            size1 = os.path.getsize(potential_file)
-                            time.sleep(1)
-                            if os.path.exists(potential_file):
-                                size2 = os.path.getsize(potential_file)
-                                if size1 == size2 and size1 > 0:
+                            if skip_stability_check:
+                                # Direct downloads are complete when saved - no need to check stability
+                                size1 = os.path.getsize(potential_file)
+                                if size1 > 0:
                                     latest_file = potential_file
-                                    print(f"  {source_name} file download complete! Size: {size1} bytes")
+                                    print(f"  {source_name} file found! Size: {size1} bytes")
                                     break
+                            else:
+                                # Browser downloads need stability check
+                                size1 = os.path.getsize(potential_file)
+                                time.sleep(0.5)
+                                if os.path.exists(potential_file):
+                                    size2 = os.path.getsize(potential_file)
+                                    if size1 == size2 and size1 > 0:
+                                        latest_file = potential_file
+                                        print(f"  {source_name} file download complete! Size: {size1} bytes")
+                                        break
                         break
                 
                 if latest_file:
                     break
                     
-                time.sleep(1)
-                wait_count += 1
+                time.sleep(0.1)  # Check every 0.1s for ultra fast detection
+                wait_count += 0.1
             
             if not latest_file:
                 logging.warning(f"No new {extension} file found for {source_name} after {max_wait} seconds")
@@ -642,21 +703,56 @@ class NSEDownloader:
             original_name = os.path.basename(latest_file)
             original_base = os.path.splitext(original_name)[0]
             
-            # Create new filename based on source (with "min" suffix)
+            # Create new filename based on source
             if source_name == 'nifty500':
                 prefix = "NIFTY500"
-            elif source_name == 'market_indices':  # market_indices
+            elif source_name == 'market_indices':
                 prefix = "MarketIndices"
+            elif source_name == 'cm_high_low':
+                prefix = "CM_52wk_HighLow"
+            elif source_name == 'oi_spurts':
+                prefix = "OI_Spurts"
+            elif source_name == 'combine_oi':
+                prefix = "CombineOI"
+            elif source_name == 'pe_detail':
+                prefix = "PE_Detail"
+            elif source_name == 'sec_bhavdata':
+                prefix = "Sec_Bhavdata"
+            elif source_name == 'block_deals':
+                prefix = "Block_Deals"
+            elif source_name == 'bulk_deals':
+                prefix = "Bulk_Deals"
+            elif source_name == 'bhavcopy_cm':
+                prefix = "BhavCopy_CM"
+            elif source_name == 'ind_close':
+                prefix = "Ind_Close"
+            elif source_name == 'fao_participant_vol':
+                prefix = "FAO_Participant_Vol"
+            elif source_name == 'fao_participant_oi':
+                prefix = "FAO_Participant_OI"
+            elif source_name == 'fii_stats':
+                prefix = "FII_Stats"
+            elif source_name == 'bhavcopy_fo':
+                prefix = "BhavCopy_FO"
             else:
                 prefix = source_name
             
-            new_filename = f"{prefix}_{date_str}-{time_str}min{extension}"
+            # Format: prefix_ddmmyy for optional files (no time suffix for optional downloads)
+            if source_name in ['nifty500', 'market_indices']:
+                # Main files get time stamp
+                new_filename = f"{prefix}_{date_str}-{time_str}min{extension}"
+            else:
+                # Optional files get only date
+                new_filename = f"{prefix}_{date_str}{extension}"
             new_filepath = os.path.join(download_path, new_filename)
             
             # If file with same name exists, add counter
             counter = 1
             while os.path.exists(new_filepath):
-                new_filename = f"{prefix}_{date_str}-{time_str}min_{counter}.csv"
+                if source_name in ['nifty500', 'market_indices']:
+                    new_filename = f"{prefix}_{date_str}-{time_str}min_{counter}{extension}"
+                else:
+                    new_filename = f"{prefix}_{date_str}_{counter}{extension}"
                 new_filepath = os.path.join(download_path, new_filename)
                 counter += 1
             
@@ -832,7 +928,7 @@ class DownloaderGUI:
         # Year
         current_year = int(datetime.now().strftime("%Y"))
         self.year_var = tk.StringVar(value=str(current_year))
-        years = [str(y) for y in range(current_year - 5, current_year + 2)]
+        years = [str(y) for y in range(current_year - 5, 2100)]
         self.year_cb = ttk.Combobox(date_inner_frame, textvariable=self.year_var, values=years, width=5, state="readonly")
         self.year_cb.pack(side=tk.LEFT, padx=1)
         
@@ -865,7 +961,10 @@ class DownloaderGUI:
         # Add checkboxes for direct URLs only
         self.source_names = {}
         for k in self.downloader.direct_urls.keys():
-            self.source_names[k] = k.replace('_', ' ').title()
+            if k == 'cm_high_low':
+                self.source_names[k] = 'CM 52wk HighLow'
+            else:
+                self.source_names[k] = k.replace('_', ' ').title()
         
         # Use grid layout for checkboxes (3 columns)
         row = 0
@@ -1015,6 +1114,7 @@ class DownloaderGUI:
         all_source_names = {k: k.replace('_', ' ').title() for k in all_source_keys}
         all_source_names['nifty500'] = "NIFTY 500"
         all_source_names['market_indices'] = "Market Indices"
+        all_source_names['cm_high_low'] = "CM 52wk HighLow"
         
         # Reverse mapping for lookup
         self.name_to_key = {v: k for k, v in all_source_names.items()}

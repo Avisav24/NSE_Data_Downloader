@@ -307,16 +307,54 @@ class NSEDownloader:
                     logging.debug(f"Cookie transfer skipped for {source_name}: {cookie_err}")
 
             headers = self.get_nse_headers()
+            
+            # Use specific referers for API endpoints to avoid blocking
+            referer = "https://www.nseindia.com/"
+            if source_name == 'nifty500':
+                referer = "https://www.nseindia.com/market-data/live-equity-market"
+            elif source_name == 'market_indices':
+                referer = "https://www.nseindia.com/market-data/live-index-watch"
+            elif source_name == 'oi_spurts':
+                referer = "https://www.nseindia.com/live-market/live-analysis/oi-spurts"
+
             headers.update({
-                "Referer": "https://www.nseindia.com/",
+                "Referer": referer,
                 "Accept": "*/*",
                 # Restrict to gzip/deflate so we avoid Brotli-encoded CSV corruption
                 "Accept-Encoding": "gzip, deflate",
             })
 
             response = session.get(url, headers=headers, timeout=60, allow_redirects=True)
+            
+            # If requests fails, try using the driver directly (fallback)
             if response.status_code != 200:
-                logging.error(f"Direct download failed for {source_name} (HTTP {response.status_code})")
+                logging.warning(f"Direct download via requests failed for {source_name} (HTTP {response.status_code}). Trying Selenium fallback...")
+                
+                if driver:
+                    try:
+                        # Update download behavior for this specific path
+                        driver.execute_cdp_cmd("Browser.setDownloadBehavior", {
+                            "behavior": "allow",
+                            "downloadPath": abs_download_path,
+                            "eventsEnabled": True
+                        })
+                        driver.execute_cdp_cmd("Page.setDownloadBehavior", {
+                            "behavior": "allow",
+                            "downloadPath": abs_download_path
+                        })
+                        
+                        # Navigate to the URL to trigger download
+                        driver.get(url)
+                        time.sleep(5) # Wait for download to start/complete
+                        
+                        # Check if any new file appeared in the path
+                        files_after = os.listdir(abs_download_path)
+                        if any(f.endswith('.csv') or f.endswith('.zip') for f in files_after):
+                            logging.info(f"Selenium fallback successful for {source_name}")
+                            return True
+                    except Exception as fallback_err:
+                        logging.error(f"Selenium fallback also failed for {source_name}: {fallback_err}")
+                
                 return False
 
             filename = None
@@ -375,7 +413,13 @@ class NSEDownloader:
             if self.gui:
                 self.gui.update_progress(12, "Establishing session with NSE India...", bar=target_bar)
             
-            time.sleep(7)  # Increased wait for reliable session establishment
+            time.sleep(5)
+            
+            # Visit dynamic data pages to ensure all cookies are set (crucial for API)
+            driver.get("https://www.nseindia.com/market-data/live-equity-market")
+            time.sleep(3)
+            driver.get("https://www.nseindia.com/market-data/live-index-watch")
+            time.sleep(3)
             
             success_nifty500 = False
             if mode in ['all', 'defaults']:
@@ -591,6 +635,8 @@ class NSEDownloader:
             # This ensures we grab the correct file when multiple files of same type exist
             # Support both the NSE original filename AND the fallback source_name
             filename_patterns = {
+                'nifty500': ['nifty-500', 'nifty500', 'MW-NIFTY'],
+                'market_indices': ['allIndices', 'market_indices', 'index-watch', 'indexall', 'all-indices'],
                 'combine_oi': ['combineoi', 'combine_oi'],
                 'bhavcopy_fo': ['BhavCopy_NSE_FO', 'bhavcopy_fo'],
                 'bhavcopy_cm': ['BhavCopy_NSE_CM', 'bhavcopy_cm'],
@@ -638,7 +684,8 @@ class NSEDownloader:
                             try:
                                 file_mtime = os.path.getmtime(file_path)
                                 # Only include files modified AFTER downloads started
-                                if file_mtime >= download_start_time:
+                                # Added 300s buffer to account for server-side generation delays
+                                if file_mtime >= (download_start_time - 300):
                                     target_files.append(f)
                             except:
                                 pass
@@ -1197,17 +1244,17 @@ class DownloaderGUI:
         # Update target date from GUI (though defaults use current date)
         self.downloader.target_date = self.get_selected_date()
         
-        # Update scheduled times from input
-        times_str = self.time_var.get()
-        valid_times = []
-        for t in times_str.split(','):
-            t = t.strip()
-            if self.validate_time(t):
-                valid_times.append(t)
-        
-        if valid_times:
-            self.downloader.scheduled_times = valid_times
+        # Update scheduled times from input (persistence)
+        valid, result = self.validate_times(self.time_var.get())
+        if valid:
+            self.downloader.scheduled_times = result
             self.downloader.save_config()
+            # Update display with normalized times
+            self.time_var.set(", ".join(result))
+            
+            # If scheduler is running, update the live schedule too
+            if self.downloader.is_running:
+                self.downloader.schedule_download()
         
         # Disable buttons
         self.start_btn.config(state=tk.DISABLED)
@@ -1297,23 +1344,41 @@ class DownloaderGUI:
         self.root.update_idletasks()
     
     def validate_time(self, time_str):
-        """Validate time format HH:MM"""
+        """Validate time format HH:MM and return normalized string"""
         try:
             parts = time_str.strip().split(":")
             if len(parts) != 2:
-                return False
+                return False, None
             hour, minute = int(parts[0]), int(parts[1])
-            return 0 <= hour < 24 and 0 <= minute < 60
+            if 0 <= hour < 24 and 0 <= minute < 60:
+                # Return normalized HH:MM format (ensures leading zeros for 'schedule' library)
+                return True, f"{hour:02d}:{minute:02d}"
+            return False, None
         except:
-            return False
+            return False, None
     
     def validate_times(self, times_str):
-        """Validate multiple times separated by commas"""
-        times = [t.strip() for t in times_str.split(",")]
-        for time_str in times:
-            if not self.validate_time(time_str):
+        """Validate multiple times separated by commas and return normalized list"""
+        if not times_str.strip():
+            return False, "Empty time string"
+            
+        raw_times = [t.strip() for t in times_str.split(",")]
+        valid_times = []
+        for time_str in raw_times:
+            if not time_str: continue
+            is_valid, formatted = self.validate_time(time_str)
+            if not is_valid:
                 return False, time_str
-        return True, times
+            if formatted not in valid_times: # Avoid duplicates
+                valid_times.append(formatted)
+            
+        if not valid_times:
+            return False, "No valid times found"
+            
+        # Sort times to keep them organized
+        valid_times.sort()
+            
+        return True, valid_times
     
     def start_scheduler(self):
         # Validate inputs
@@ -1322,8 +1387,8 @@ class DownloaderGUI:
             messagebox.showerror("Invalid Time", f"Invalid time format: '{result}'\nPlease enter times in HH:MM format (24-hour)\nSeparate multiple times with commas")
             return
         
-        # Update downloader settings
-        self.downloader.scheduled_times = result  # result contains the list of times
+        # Update downloader settings with normalized times
+        self.downloader.scheduled_times = result
         
         # Update enabled downloads
         self.downloader.enabled_downloads = []
@@ -1332,6 +1397,9 @@ class DownloaderGUI:
                 self.downloader.enabled_downloads.append(key)
                 
         self.downloader.save_config()
+        
+        # Update display to show normalized times
+        self.time_var.set(", ".join(result))
         
         # Create download directories if they don't exist
         for path in self.downloader.download_paths.values():
@@ -1352,13 +1420,15 @@ class DownloaderGUI:
                 f"Today is {day_name}.\n\nThe market is closed on weekends.\nScheduled downloads will run on weekdays (Monday-Friday) only.\n\nYou can still use 'Download Now' for manual downloads."
             )
         
-        # Start scheduler in a separate thread
-        self.scheduler_thread = threading.Thread(target=self.downloader.run_scheduler, daemon=True)
-        self.scheduler_thread.start()
+        # Start scheduler in a separate thread if not already running
+        if not self.downloader.is_running:
+            self.scheduler_thread = threading.Thread(target=self.downloader.run_scheduler, daemon=True)
+            self.scheduler_thread.start()
         
         # Update UI
         self.start_btn.config(state=tk.DISABLED)
         self.stop_btn.config(state=tk.NORMAL)
+        self.update_progress("Scheduler active and waiting...")
     
     def stop_scheduler(self):
         self.downloader.is_running = False
@@ -1370,9 +1440,19 @@ class DownloaderGUI:
     
     def run_download_thread(self, mode='all'):
         self.downloader.download_data(mode=mode)
-        # Re-enable buttons after download
-        self.root.after(0, lambda: self.start_btn.config(state=tk.NORMAL))
-        self.root.after(0, lambda: self.stop_btn.config(state=tk.DISABLED))
+        # Re-enable buttons after download, but check if scheduler is running
+        def restore_buttons():
+            if self.downloader.is_running:
+                self.start_btn.config(state=tk.DISABLED)
+                self.stop_btn.config(state=tk.NORMAL)
+            else:
+                self.start_btn.config(state=tk.NORMAL)
+                self.stop_btn.config(state=tk.DISABLED)
+            
+            if hasattr(self, 'manual_btn'):
+                self.manual_btn.config(state=tk.NORMAL)
+                
+        self.root.after(0, restore_buttons)
     
     def toggle_auto_mode(self):
         """Toggle auto mode and save state"""

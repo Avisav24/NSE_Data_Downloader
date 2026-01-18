@@ -38,7 +38,9 @@ class NSEDownloader:
             'fao_participant_vol': "https://nsearchives.nseindia.com/content/nsccl/fao_participant_vol_{ddmmyyyy}.csv",
             'fao_participant_oi': "https://nsearchives.nseindia.com/content/nsccl/fao_participant_oi_{ddmmyyyy}.csv",
             'fii_stats': "https://nsearchives.nseindia.com/content/fo/fii_stats_{dd-Mon-yyyy}.xls",
-            'bhavcopy_fo': "https://nsearchives.nseindia.com/content/fo/BhavCopy_NSE_FO_0_0_0_{yyyymmdd}_F_0000.csv.zip"
+            'bhavcopy_fo': "https://nsearchives.nseindia.com/content/fo/BhavCopy_NSE_FO_0_0_0_{yyyymmdd}_F_0000.csv.zip",
+            'Short_Sell': "https://nsearchives.nseindia.com/archives/equities/shortSelling/shortselling_{ddmmyyyy}.csv"
+            
         }
         
         self.target_date = datetime.now() # Default to today
@@ -62,7 +64,8 @@ class NSEDownloader:
             'fao_participant_vol': eod_base_path,
             'fao_participant_oi': eod_base_path,
             'fii_stats': eod_base_path,
-            'bhavcopy_fo': eod_base_path
+            'bhavcopy_fo': eod_base_path,
+            'Short_Sell': eod_base_path
         }
         
         self.scheduled_times = ["09:30"]  # Now supports multiple times
@@ -98,7 +101,7 @@ class NSEDownloader:
                             'oi_spurts', 'combine_oi', 'pe_detail', 'cm_high_low',
                             'sec_bhavdata', 'block_deals', 'bulk_deals', 'bhavcopy_cm',
                             'ind_close', 'fao_participant_vol', 'fao_participant_oi',
-                            'fii_stats', 'bhavcopy_fo'
+                            'fii_stats', 'bhavcopy_fo', 'Short_Sell'
                         ]
                         eod_base_path = os.path.join(os.path.expanduser("~"), "Downloads", "EOD_Data")
 
@@ -130,6 +133,15 @@ class NSEDownloader:
                     self.auto_mode = config.get('auto_mode', False)
                     # Load enabled downloads
                     self.enabled_downloads = config.get('enabled_downloads', [])
+                    
+                    # Migrate old naming for Short Sell if present
+                    if 'Short_sell' in self.enabled_downloads:
+                        self.enabled_downloads = ['Short_Sell' if d == 'Short_sell' else d for d in self.enabled_downloads]
+                        migrated = True
+                    
+                    if 'Short_sell' in self.download_paths:
+                        self.download_paths['Short_Sell'] = self.download_paths.pop('Short_sell')
+                        migrated = True
 
                 if migrated:
                     self.save_config()
@@ -649,7 +661,8 @@ class NSEDownloader:
                 'fao_participant_oi': ['fao_participant_oi'],
                 'block_deals': ['block', 'block_deals'],
                 'bulk_deals': ['bulk', 'bulk_deals'],
-                'oi_spurts': ['By-Underlying', 'oi_spurts']
+                'oi_spurts': ['By-Underlying', 'oi_spurts'],
+                'Short_Sell': ['shortselling', 'short_sell']
             }
             expected_patterns = filename_patterns.get(source_name, [source_name])
             
@@ -781,6 +794,8 @@ class NSEDownloader:
                 prefix = "FII_Stats"
             elif source_name == 'bhavcopy_fo':
                 prefix = "BhavCopy_FO"
+            elif  source_name== 'Short_Sell':
+                prefix="Short_sell"
             else:
                 prefix = source_name
             

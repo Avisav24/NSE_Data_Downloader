@@ -17,18 +17,18 @@ A powerful desktop application to automatically download **NIFTY 500**, **Market
 
 ### 🎯 **Ready-to-Use Windows Executable**
 
-**Latest Version: v3.4** | **Size: ~24 MB** | **Platform: Windows 10/11**
+**Latest Version: v3.5** | **Size: ~24 MB** | **Platform: Windows 10/11**
 
 <p>
-  <a href="https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_Data_Downloader.exe">
-    <img src="https://img.shields.io/badge/⬇️%20Download-NSE__Data_Downloader.exe-success?style=for-the-badge&logo=windows&logoColor=white" alt="Download EXE" height="50"/>
+  <a href="https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/nse_downloader.exe">
+    <img src="https://img.shields.io/badge/⬇️%20Download-nse__downloader.exe-success?style=for-the-badge&logo=windows&logoColor=white" alt="Download EXE" height="50"/>
   </a>
 </p>
 
 **Direct Download URL:**
 
 ```text
-https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_Data_Downloader.exe
+https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/nse_downloader.exe
 ```
 
 _Or browse the [releases folder](releases/) for all versions_
@@ -43,12 +43,12 @@ _Or browse the [releases folder](releases/) for all versions_
 
 <div align="center">
 
-### v3.4 Highlights
+### v3.5 Highlights
 
-- **Multiple Scheduled Times**: Added support for comma-separated times in the scheduler.
-- **Improved Market Indices Download**: Added Selenium fallback for more reliable index data retrieval.
-- **Session Stability Fixes**: Enhanced NSE session establishment to bypass recent blocks.
-- Rebuilt Windows EXE (v3.4)
+- **Short Sell Download Fix**: Resolved a casing issue (`Short_sell` vs `Short_Sell`) that caused failures in some environments.
+- **Config Migration**: Added automatic migration logic for older configuration files.
+- **Improved Executable**: Rebuilt with the latest dependencies and fixes.
+- Rebuilt Windows EXE (v3.5)
 
 <table>
 <tr>

@@ -17,7 +17,7 @@ A powerful desktop application to automatically download **NIFTY 500**, **Market
 
 ### 🎯 **Ready-to-Use Windows Executable**
 
-**Latest Version: v3.5** | **Size: ~24 MB** | **Platform: Windows 10/11**
+**Latest Version: v3.5** | **Size: ~82 MB** | **Platform: Windows 10/11**
 
 <p>
   <a href="https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/nse_downloader.exe">
@@ -45,10 +45,10 @@ _Or browse the [releases folder](releases/) for all versions_
 
 ### v3.5 Highlights
 
-- **Short Sell Download Fix**: Resolved a casing issue (`Short_sell` vs `Short_Sell`) that caused failures in some environments.
-- **Config Migration**: Added automatic migration logic for older configuration files.
-- **Improved Executable**: Rebuilt with the latest dependencies and fixes.
-- Rebuilt Windows EXE (v3.5)
+- **Critical Fix**: Resolved **Short Selling** download failure by unifying naming conventions.
+- **Auto-Migration**: Seamlessly updates older `config.json` files to the latest format.
+- **Reliability Improvements**: Enhanced file pattern matching to reliably capture downloads even with slow connections.
+- **Updated Binaries**: Rebuilt standalone executable with optimized dependency handling.
 
 <table>
 <tr>

@@ -72,6 +72,8 @@ class NSEDownloader:
         self.optional_download_time = "21:00"  # Optional files run at 9 PM daily
         self.is_running = False
         self.auto_mode = False  # Auto mode: scheduler runs 8 AM - 8 PM
+        self.weekend_downloads_enabled = False  # Allow downloads on weekends
+        self.last_weekend_notification = None  # Track last weekend notification date
         self.enabled_downloads = [] # List of enabled optional downloads
         self.config_file = "config.json"
         self.gui = gui
@@ -131,6 +133,8 @@ class NSEDownloader:
                         self.optional_download_time = config.get('optional_download_time', self.optional_download_time)
                     # Load auto mode state
                     self.auto_mode = config.get('auto_mode', False)
+                    # Load weekend downloads setting
+                    self.weekend_downloads_enabled = config.get('weekend_downloads_enabled', False)
                     # Load enabled downloads
                     self.enabled_downloads = config.get('enabled_downloads', [])
                     
@@ -156,6 +160,7 @@ class NSEDownloader:
                 'scheduled_times': self.scheduled_times,
                 'optional_download_time': self.optional_download_time,
                 'auto_mode': self.auto_mode,
+                'weekend_downloads_enabled': self.weekend_downloads_enabled,
                 'enabled_downloads': self.enabled_downloads
             }
             with open(self.config_file, 'w') as f:
@@ -842,28 +847,42 @@ class NSEDownloader:
     def scheduled_download_wrapper(self):
         """Wrapper for scheduled downloads - checks if it's weekend"""
         from datetime import datetime
+        from tkinter import messagebox
         
         # Get current day (0=Monday, 6=Sunday)
         current_day = datetime.now().weekday()
+        today_date = datetime.now().date()
         
         # Check if it's Saturday (5) or Sunday (6)
-        if current_day == 5:  # Saturday
-            message = "It's Saturday - Market is closed. Skipping scheduled download."
-            logging.info(message)
-            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {message}")
-            if self.gui:
-                self.gui.update_progress(0, "Weekend - Market closed")
-            return
-        elif current_day == 6:  # Sunday
-            message = "It's Sunday - Market is closed. Skipping scheduled download."
-            logging.info(message)
-            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {message}")
-            if self.gui:
-                self.gui.update_progress(0, "Weekend - Market closed")
-            return
+        if current_day == 5 or current_day == 6:  # Weekend
+            day_name = "Saturday" if current_day == 5 else "Sunday"
+            
+            if not self.weekend_downloads_enabled:
+                # Weekend downloads disabled - show notification
+                message = f"It's {day_name} - Weekend downloads are disabled."
+                logging.info(message)
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {message}")
+                if self.gui:
+                    self.gui.update_progress(0, "Weekend - Downloads disabled")
+                    
+                    # Show notification only once per day
+                    if self.last_weekend_notification != today_date:
+                        self.last_weekend_notification = today_date
+                        messagebox.showinfo(
+                            "Weekend Downloads Disabled",
+                            f"It's {day_name} - Market is typically closed.\n\n"
+                            f"Weekend downloads are currently disabled.\n"
+                            f"Enable the 'Enable Weekend Downloads' checkbox\n"
+                            f"in the scheduler section to download on weekends."
+                        )
+                return
+            else:
+                # Weekend downloads enabled - proceed
+                logging.info(f"Weekend detected ({day_name}) but weekend downloads enabled - Proceeding")
+        else:
+            # Weekday - proceed with download
+            logging.info("Weekday detected - Proceeding with scheduled download")
         
-        # Weekday - proceed with download
-        logging.info("Weekday detected - Proceeding with scheduled download")
         # Ensure scheduled downloads always use current date
         self.target_date = datetime.now()
         # Scheduler only downloads defaults (NIFTY 500 & Indices)
@@ -871,6 +890,15 @@ class NSEDownloader:
     
     def scheduled_optionals_wrapper(self):
         """Run optional download set each evening"""
+        from datetime import datetime
+        
+        # Check for weekend
+        current_day = datetime.now().weekday()
+        if current_day in [5, 6] and not self.weekend_downloads_enabled:
+            day_name = "Saturday" if current_day == 5 else "Sunday"
+            logging.info(f"It's {day_name} - Skipping optional downloads (weekend downloads disabled)")
+            return
+        
         if not self.enabled_downloads:
             logging.info("No optional downloads enabled; skipping optional schedule run")
             return
@@ -920,6 +948,7 @@ class DownloaderGUI:
         
         # Initialize selection variables
         self.selected_downloads = {}
+        self.weekend_downloads_var = tk.BooleanVar(value=self.downloader.weekend_downloads_enabled)
         
         self.create_widgets()
         
@@ -1085,6 +1114,15 @@ class DownloaderGUI:
             command=self.toggle_auto_mode
         )
         auto_mode_check.pack(anchor=tk.W, padx=3, pady=1)
+        
+        # Weekend Downloads Checkbox
+        weekend_check = ttk.Checkbutton(
+            time_frame,
+            text="Enable Weekend Downloads (Saturday & Sunday)",
+            variable=self.weekend_downloads_var,
+            command=self.toggle_weekend_downloads
+        )
+        weekend_check.pack(anchor=tk.W, padx=3, pady=1)
         
         ttk.Label(time_frame, text="Times (HH:MM, 24-hour, comma separated):", font=("Arial", 8)).pack(anchor=tk.W, padx=3, pady=1)
         
@@ -1424,15 +1462,15 @@ class DownloaderGUI:
         # Setup and start scheduler
         self.downloader.schedule_download()
         
-        # Check if today is weekend and show info
+        # Check if today is weekend and show info (only if weekend downloads are disabled)
         from datetime import datetime
         current_day = datetime.now().weekday()
         day_name = datetime.now().strftime('%A')
         
-        if current_day in [5, 6]:  # Saturday or Sunday
+        if current_day in [5, 6] and not self.downloader.weekend_downloads_enabled:  # Saturday or Sunday
             messagebox.showinfo(
                 "Weekend Detected", 
-                f"Today is {day_name}.\n\nThe market is closed on weekends.\nScheduled downloads will run on weekdays (Monday-Friday) only.\n\nYou can still use 'Download Now' for manual downloads."
+                f"Today is {day_name}.\n\nThe market is closed on weekends.\nScheduled downloads will run on weekdays (Monday-Friday) only.\n\nYou can enable 'Enable Weekend Downloads' checkbox to download on weekends.\nYou can still use 'Download Now' for manual downloads."
             )
         
         # Start scheduler in a separate thread if not already running
@@ -1481,6 +1519,12 @@ class DownloaderGUI:
             # Auto mode disabled - stop scheduler if running
             if self.downloader.is_running:
                 self.stop_scheduler()
+    
+    def toggle_weekend_downloads(self):
+        """Toggle weekend downloads and save state"""
+        self.downloader.weekend_downloads_enabled = self.weekend_downloads_var.get()
+        self.downloader.save_config()
+        logging.info(f"Weekend downloads {'enabled' if self.downloader.weekend_downloads_enabled else 'disabled'}")
     
     def check_and_start_auto_mode(self):
         """Check if current time is between 8 AM and 8 PM, and start scheduler if so"""

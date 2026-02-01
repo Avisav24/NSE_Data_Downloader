@@ -361,4 +361,4 @@ This tool is for educational and personal use only. Please respect NSE India's t
 ---
 
 **Repository**: https://github.com/Avisav24/NSE_Data_Downloader  
-**Last Updated**: December 11, 2025
+**Last Updated**: January 31, 2026

@@ -45,9 +45,10 @@ _Or browse the [releases folder](releases/) for all versions_
 
 ### v3.6 Highlights
 
-- **Improved Reliability**: Added forced cleanup of incomplete download files (`downloads.htm.crdownload`) in NIFTY500 folder.
-- **Enhanced Error Handling**: Better handling of interrupted downloads with automatic cleanup.
-- **Updated Executable**: Rebuilt standalone .exe with latest improvements.
+- **Enhanced Cleanup**: Removes both incomplete downloads (`downloads.htm.crdownload`) and unwanted HTML files (`downloads.htm`) automatically.
+- **Improved Reliability**: Automatic cleanup of stray download files ensures clean NIFTY500 folder.
+- **Better Error Handling**: More robust handling of browser-generated files during downloads.
+- **Updated Executable**: Rebuilt standalone .exe with latest improvements and cleanup features.
 
 ### v3.5 Highlights
 

@@ -629,6 +629,17 @@ class NSEDownloader:
             str: New filename if successful, None if failed
         """
         try:
+            # Force delete any incomplete download files for nifty500
+            if source_name == 'nifty500':
+                try:
+                    incomplete_file = os.path.join(download_path, 'downloads.htm.crdownload')
+                    if os.path.exists(incomplete_file):
+                        os.remove(incomplete_file)
+                        logging.info(f"Deleted incomplete download file: {incomplete_file}")
+                        print(f"  🗑️ Deleted incomplete download: downloads.htm.crdownload")
+                except Exception as e:
+                    logging.warning(f"Could not delete incomplete download file: {str(e)}")
+            
             logging.info(f"Searching for downloaded file from {source_name} in: {download_path}")
             
             # Wait for file to appear and download to complete

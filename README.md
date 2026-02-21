@@ -17,18 +17,18 @@ A powerful desktop application to automatically download **NIFTY 500**, **Market
 
 ### 🎯 **Ready-to-Use Windows Executable**
 
-**Latest Version: v3.5** | **Size: ~23 MB** | **Platform: Windows 10/11**
+**Latest Version: v3.6** | **Size: ~23 MB** | **Platform: Windows 10/11**
 
 <p>
-  <a href="https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/nse_downloader.exe">
-    <img src="https://img.shields.io/badge/⬇️%20Download-nse__downloader.exe-success?style=for-the-badge&logo=windows&logoColor=white" alt="Download EXE" height="50"/>
+  <a href="https://github.com/Avisav24/NSE_Data_Downloader/raw/main/dist/NSE_Data_Downloader.exe">
+    <img src="https://img.shields.io/badge/⬇️%20Download-NSE__Data__Downloader.exe-success?style=for-the-badge&logo=windows&logoColor=white" alt="Download EXE" height="50"/>
   </a>
 </p>
 
 **Direct Download URL:**
 
 ```text
-https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/nse_downloader.exe
+https://github.com/Avisav24/NSE_Data_Downloader/raw/main/dist/NSE_Data_Downloader.exe
 ```
 
 _Or browse the [releases folder](releases/) for all versions_
@@ -42,6 +42,12 @@ _Or browse the [releases folder](releases/) for all versions_
 ## ✨ What's New
 
 <div align="center">
+
+### v3.6 Highlights
+
+- **Improved Reliability**: Added forced cleanup of incomplete download files (`downloads.htm.crdownload`) in NIFTY500 folder.
+- **Enhanced Error Handling**: Better handling of interrupted downloads with automatic cleanup.
+- **Updated Executable**: Rebuilt standalone .exe with latest improvements.
 
 ### v3.5 Highlights
 

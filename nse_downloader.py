@@ -39,7 +39,8 @@ class NSEDownloader:
             'fao_participant_oi': "https://nsearchives.nseindia.com/content/nsccl/fao_participant_oi_{ddmmyyyy}.csv",
             'fii_stats': "https://nsearchives.nseindia.com/content/fo/fii_stats_{dd-Mon-yyyy}.xls",
             'bhavcopy_fo': "https://nsearchives.nseindia.com/content/fo/BhavCopy_NSE_FO_0_0_0_{yyyymmdd}_F_0000.csv.zip",
-            'Short_Sell': "https://nsearchives.nseindia.com/archives/equities/shortSelling/shortselling_{ddmmyyyy}.csv"
+            'Short_Sell': "https://nsearchives.nseindia.com/archives/equities/shortSelling/shortselling_{ddmmyyyy}.csv",
+            'corporates_pit': "https://www.nseindia.com/api/corporates-pit?index=equities&csv=true"
             
         }
         
@@ -65,7 +66,8 @@ class NSEDownloader:
             'fao_participant_oi': eod_base_path,
             'fii_stats': eod_base_path,
             'bhavcopy_fo': eod_base_path,
-            'Short_Sell': eod_base_path
+            'Short_Sell': eod_base_path,
+            'corporates_pit': eod_base_path
         }
         
         self.scheduled_times = ["09:30"]  # Now supports multiple times
@@ -103,7 +105,7 @@ class NSEDownloader:
                             'oi_spurts', 'combine_oi', 'pe_detail', 'cm_high_low',
                             'sec_bhavdata', 'block_deals', 'bulk_deals', 'bhavcopy_cm',
                             'ind_close', 'fao_participant_vol', 'fao_participant_oi',
-                            'fii_stats', 'bhavcopy_fo', 'Short_Sell'
+                            'fii_stats', 'bhavcopy_fo', 'Short_Sell', 'corporates_pit'
                         ]
                         eod_base_path = os.path.join(os.path.expanduser("~"), "Downloads", "EOD_Data")
 
@@ -686,7 +688,8 @@ class NSEDownloader:
                 'block_deals': ['block', 'block_deals'],
                 'bulk_deals': ['bulk', 'bulk_deals'],
                 'oi_spurts': ['By-Underlying', 'oi_spurts'],
-                'Short_Sell': ['shortselling', 'short_sell']
+                'Short_Sell': ['shortselling', 'short_sell'],
+                'corporates_pit': ['corporates-pit', 'corporates_pit']
             }
             expected_patterns = filename_patterns.get(source_name, [source_name])
             
@@ -820,6 +823,8 @@ class NSEDownloader:
                 prefix = "BhavCopy_FO"
             elif  source_name== 'Short_Sell':
                 prefix="Short_sell"
+            elif source_name == 'corporates_pit':
+                prefix = "Corporates_PIT"
             else:
                 prefix = source_name
             
@@ -1073,6 +1078,8 @@ class DownloaderGUI:
         for k in self.downloader.direct_urls.keys():
             if k == 'cm_high_low':
                 self.source_names[k] = 'CM 52wk HighLow'
+            elif k == 'corporates_pit':
+                self.source_names[k] = 'Corporates PIT'
             else:
                 self.source_names[k] = k.replace('_', ' ').title()
         
@@ -1234,6 +1241,7 @@ class DownloaderGUI:
         all_source_names['nifty500'] = "NIFTY 500"
         all_source_names['market_indices'] = "Market Indices"
         all_source_names['cm_high_low'] = "CM 52wk HighLow"
+        all_source_names['corporates_pit'] = "Corporates PIT"
         
         # Reverse mapping for lookup
         self.name_to_key = {v: k for k, v in all_source_names.items()}

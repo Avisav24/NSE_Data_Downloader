@@ -17,7 +17,7 @@ A powerful desktop application to automatically download **NIFTY 500**, **Market
 
 ### 🎯 **Ready-to-Use Windows Executable**
 
-**Latest Version: v3.6** | **Size: ~23 MB** | **Platform: Windows 10/11**
+**Latest Version: v3.7** | **Size: ~23 MB** | **Platform: Windows 10/11**
 
 <p>
   <a href="https://github.com/Avisav24/NSE_Data_Downloader/raw/main/dist/NSE_Data_Downloader.exe">
@@ -43,6 +43,13 @@ _Or browse the [releases folder](releases/) for all versions_
 
 <div align="center">
 
+### v3.7 Highlights
+
+- **New Optional Report**: Added **Corporates PIT (Promoter Insider Trading)** as an optional EOD download.
+- **Frontend Updated**: Added a new checkbox and settings-path entry labeled **Corporates PIT**.
+- **EOD Routing**: Corporate PIT downloads are routed to the same EOD storage flow as other optional files.
+- **Updated Executable**: Rebuilt standalone `.exe` with the new endpoint and UI support.
+
 ### v3.6 Highlights
 
 - **Enhanced Cleanup**: Removes both incomplete downloads (`downloads.htm.crdownload`) and unwanted HTML files (`downloads.htm`) automatically.
@@ -63,11 +70,12 @@ _Or browse the [releases folder](releases/) for all versions_
 
 ### 📊 **Expanded Data Suite**
 
-**NEW!** Now supports 14+ new reports!
+**NEW!** Now supports 15+ reports!
 
 ✅ **FnO:** OI Spurts, Participant Vol/OI, FII Stats  
 ✅ **Equities:** Bulk/Block Deals, 52 Wk High/Low  
 ✅ **Archives:** Daily Bhavcopies (CM & FO)
+✅ **Corporate Filings:** Corporates PIT (CSV)
 
 </td>
 <td width="50%" align="center">
@@ -139,7 +147,7 @@ The application now fetches the following reports automatically:
 | :-------------------- | :----------------------------------------------------------------------------------------------------------------------------- |
 | **Derivatives (FnO)** | • OI Spurts (By Underlying)<br>• Combined OI (Archive)<br>• Participant Volume & OI<br>• FII Statistics<br>• FO Bhavcopy (ZIP) |
 | **Capital Market**    | • NIFTY 500 Data<br>• Bulk Deals & Block Deals<br>• 52 Week High/Low<br>• Security Bhavdata (Full)<br>• CM Bhavcopy (ZIP)      |
-| **Indices/Others**    | • Indices Close All<br>• PE Details                                                                                            |
+| **Indices/Others**    | • Indices Close All<br>• PE Details<br>• Corporates PIT                                                                       |
 
 ---
 
@@ -182,7 +190,7 @@ The application now fetches the following reports automatically:
 
 | Feature                         | Description                                              |
 | ------------------------------- | -------------------------------------------------------- |
-| 📥 **Multi-Source Downloads**   | Download from 14+ NSE endpoints simultaneously           |
+| 📥 **Multi-Source Downloads**   | Download from 15+ NSE endpoints simultaneously           |
 | 📅 **Weekend-Aware Scheduling** | Auto-skips Saturday & Sunday (market closed)             |
 | 📂 **Smart Organization**       | Files are sorted into relevant folders automatically     |
 | 🔇 **Hidden Browser Mode**      | Completely background operation - no visible window      |
@@ -192,7 +200,7 @@ The application now fetches the following reports automatically:
 | 🤖 **Auto Mode**                | Auto-start scheduler during business hours (8 AM - 8 PM) |
 | Feature                         | Description                                              |
 | ---------                       | -------------                                            |
-| 📥 **Multi-Source Downloads**   | Download from 14+ NSE endpoints simultaneously           |
+| 📥 **Multi-Source Downloads**   | Download from 15+ NSE endpoints simultaneously           |
 | 📅 **Weekend-Aware Scheduling** | Auto-skips Saturday & Sunday (market closed)             |
 | 📂 **Smart Organization**       | Files are sorted into relevant folders automatically     |
 | 🔇 **Hidden Browser Mode**      | Completely background operation - no visible window      |
@@ -310,14 +318,12 @@ Examples:
    ```
 
 2. **Configure Settings**:
-
    - **Download Locations**: Click "Browse" to select save locations.
    - **Auto Mode**: Check "Auto Mode" to enable automatic scheduler activation on startup.
    - **Schedule Times**: Enter times in 24-hour format (e.g., `15:35, 17:00`).
    - **Note**: Scheduled downloads only run Monday-Friday.
 
 3. **Start Scheduler**:
-
    - Click "Start Scheduler"
    - Downloads occur automatically at configured times.
 

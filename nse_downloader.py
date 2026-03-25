@@ -335,6 +335,8 @@ class NSEDownloader:
                 referer = "https://www.nseindia.com/market-data/live-index-watch"
             elif source_name == 'oi_spurts':
                 referer = "https://www.nseindia.com/live-market/live-analysis/oi-spurts"
+            elif source_name == 'corporates_pit':
+                referer = "https://www.nseindia.com/companies-listing/corporate-filings-insider-trading"
 
             headers.update({
                 "Referer": referer,
@@ -344,6 +346,20 @@ class NSEDownloader:
             })
 
             response = session.get(url, headers=headers, timeout=60, allow_redirects=True)
+
+            # NSE may intermittently return 401/403 for API calls even with valid cookies.
+            # Refresh browser session cookies once and retry before failing.
+            if response.status_code in (401, 403) and driver:
+                logging.warning(f"Received HTTP {response.status_code} for {source_name}; retrying after cookie refresh")
+                try:
+                    driver.get(referer)
+                    time.sleep(1)
+                    session.cookies.clear()
+                    for cookie in driver.get_cookies():
+                        session.cookies.set(cookie.get("name"), cookie.get("value"))
+                    response = session.get(url, headers=headers, timeout=60, allow_redirects=True)
+                except Exception as retry_err:
+                    logging.warning(f"Retry cookie refresh failed for {source_name}: {retry_err}")
             
             # If requests fails, try using the driver directly (fallback)
             if response.status_code != 200:
@@ -391,7 +407,7 @@ class NSEDownloader:
                 fp.write(response.content)
 
             logging.info(f"Saved {source_name} as {target_file}")
-            return True
+            return target_file
         except Exception as e:
             logging.error(f"Error downloading {source_name}: {str(e)}")
             print(f"Error downloading {source_name}: {str(e)}")
@@ -525,7 +541,8 @@ class NSEDownloader:
             if mode in ['all', 'defaults']:
                 if success_nifty500:
                     # Update progress: Processing NIFTY 500 file
-                    renamed = self.rename_downloaded_file('nifty500', self.download_paths['nifty500'], skip_stability_check=True, progress_start=76, progress_end=88, progress_bar="main", download_start_time=download_start_time)
+                    preferred_file = success_nifty500 if isinstance(success_nifty500, str) else None
+                    renamed = self.rename_downloaded_file('nifty500', self.download_paths['nifty500'], skip_stability_check=True, progress_start=76, progress_end=88, progress_bar="main", download_start_time=download_start_time, preferred_file=preferred_file)
                     if renamed:
                         renamed_files.append(renamed)
                     else:
@@ -535,7 +552,8 @@ class NSEDownloader:
             
                 if success_market:
                     # Update progress: Processing Market Indices file
-                    renamed = self.rename_downloaded_file('market_indices', self.download_paths['market_indices'], skip_stability_check=True, progress_start=88, progress_end=100, progress_bar="main", download_start_time=download_start_time)
+                    preferred_file = success_market if isinstance(success_market, str) else None
+                    renamed = self.rename_downloaded_file('market_indices', self.download_paths['market_indices'], skip_stability_check=True, progress_start=88, progress_end=100, progress_bar="main", download_start_time=download_start_time, preferred_file=preferred_file)
                     if renamed:
                         renamed_files.append(renamed)
                     else:
@@ -565,7 +583,8 @@ class NSEDownloader:
                         elif '.xls' in self.direct_urls[key].lower():
                             ext = '.xls'
                             
-                        renamed = self.rename_downloaded_file(key, self.download_paths[key], extension=ext, skip_stability_check=True, progress_start=start_p, progress_end=end_p, progress_bar="optional", download_start_time=download_start_time)
+                        preferred_file = success if isinstance(success, str) else None
+                        renamed = self.rename_downloaded_file(key, self.download_paths[key], extension=ext, skip_stability_check=True, progress_start=start_p, progress_end=end_p, progress_bar="optional", download_start_time=download_start_time, preferred_file=preferred_file)
                         if renamed:
                             renamed_files.append(renamed)
                         else:
@@ -614,7 +633,7 @@ class NSEDownloader:
             if driver:
                 driver.quit()
     
-    def rename_downloaded_file(self, source_name, download_path, extension='.csv', skip_stability_check=True, progress_start=98, progress_end=100, progress_bar="optional", download_start_time=None):
+    def rename_downloaded_file(self, source_name, download_path, extension='.csv', skip_stability_check=True, progress_start=98, progress_end=100, progress_bar="optional", download_start_time=None, preferred_file=None):
         """Rename the most recently downloaded file with timestamp
         
         Args:
@@ -656,6 +675,10 @@ class NSEDownloader:
             max_wait = 10 if skip_stability_check else 30  # Even faster for direct downloads
             wait_count = 0
             latest_file = None
+
+            # If download function already returned an exact file path, prefer it.
+            if preferred_file and os.path.exists(preferred_file):
+                latest_file = preferred_file
             
             # Check both configured path and default Downloads folder
             paths_to_check = [download_path]
@@ -698,7 +721,7 @@ class NSEDownloader:
             if download_start_time is None:
                 download_start_time = time_module.time() - 120  # Fallback: last 2 minutes
             
-            while wait_count < max_wait:
+            while (latest_file is None) and wait_count < max_wait:
                 # Update progress dynamically based on elapsed time
                 if self.gui:
                     progress_pct = progress_start + int((wait_count / max_wait) * (progress_end - progress_start))

@@ -17,7 +17,7 @@ A powerful desktop application to automatically download **NIFTY 500**, **Market
 
 ### 🎯 **Ready-to-Use Windows Executable**
 
-**Latest Version: v3.9** | **Size: ~82 MB** | **Platform: Windows 10/11**
+**Latest Version: v3.9** | **Size: ~19 MB** | **Platform: Windows 10/11**
 
 <p>
    <a href="https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/nse_downloader.exe">

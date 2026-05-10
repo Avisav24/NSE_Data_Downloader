@@ -17,7 +17,7 @@ A powerful desktop application to automatically download **NIFTY 500**, **Market
 
 ### 🎯 **Ready-to-Use Windows Executable**
 
-**Latest Version: v3.8** | **Size: ~23 MB** | **Platform: Windows 10/11**
+**Latest Version: v3.9** | **Size: ~82 MB** | **Platform: Windows 10/11**
 
 <p>
    <a href="https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/nse_downloader.exe">
@@ -42,6 +42,13 @@ _Or browse the [releases folder](releases/) for all versions_
 ## ✨ What's New
 
 <div align="center">
+
+### v3.9 Highlights
+
+- **BSE Cash Bhavcopy Support**: Added **BSE Cash Market (CM) Bhavcopy** as optional download from BSE India.
+- **Enhanced Data Coverage**: Now supports downloads from both **NSE** and **BSE** for comprehensive equity data.
+- **File Size Optimization**: Reduced executable size through optimized packaging.
+- **Updated Executable**: Rebuilt with new BSE endpoint integration and improved download handling.
 
 ### v3.8 Highlights
 
@@ -76,12 +83,13 @@ _Or browse the [releases folder](releases/) for all versions_
 
 ### 📊 **Expanded Data Suite**
 
-**NEW!** Now supports 15+ reports!
+**NEW!** Now supports 16+ reports from NSE & BSE!
 
 ✅ **FnO:** OI Spurts, Participant Vol/OI, FII Stats  
 ✅ **Equities:** Bulk/Block Deals, 52 Wk High/Low  
 ✅ **Archives:** Daily Bhavcopies (CM & FO)
 ✅ **Corporate Filings:** Corporates PIT (CSV)
+✅ **BSE:** Cash Market Bhavcopy (NEW!)
 
 </td>
 <td width="50%" align="center">

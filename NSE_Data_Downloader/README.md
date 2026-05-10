@@ -154,7 +154,7 @@ The application now fetches the following reports automatically:
 | :-------------------- | :----------------------------------------------------------------------------------------------------------------------------- |
 | **Derivatives (FnO)** | • OI Spurts (By Underlying)<br>• Combined OI (Archive)<br>• Participant Volume & OI<br>• FII Statistics<br>• FO Bhavcopy (ZIP) |
 | **Capital Market**    | • NIFTY 500 Data<br>• Bulk Deals & Block Deals<br>• 52 Week High/Low<br>• Security Bhavdata (Full)<br>• CM Bhavcopy (ZIP)      |
-| **BSE Market Data**   | • BSE Cash Bhavcopy (Equity)                                                                                                  |
+| **BSE Market Data**   | • BSE Cash Bhavcopy (Equity)                                                                                                   |
 | **Indices/Others**    | • Indices Close All<br>• PE Details<br>• Corporates PIT                                                                        |
 
 ---

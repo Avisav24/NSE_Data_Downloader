@@ -13,11 +13,9 @@ a = Analysis(
     excludes=[
         'matplotlib', 'numpy', 'scipy', 'pandas', 'PIL', 'cv2',
         'pytest', 'py', 'tkinter.test', 'unittest', 'test',
-        'email', 'xml', 'html', 'sqlite3', 'asyncio',
-        'typing_extensions', 'distutils', 'setuptools',
         'IPython', 'jupyter', 'notebook', 'jedi', 'parso',
         'pygments', 'pkg_resources', 'wheel', 'pip',
-        'cryptography', 'ssl', 'hashlib', 'hmac'
+        'cryptography'
     ],
     noarchive=False,
     optimize=2,

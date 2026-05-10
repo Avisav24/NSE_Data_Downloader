@@ -17,10 +17,10 @@ A powerful desktop application to automatically download **NIFTY 500**, **Market
 
 ### 🎯 **Ready-to-Use Windows Executable**
 
-**Latest Version: v3.8** | **Size: ~23 MB** | **Platform: Windows 10/11**
+**Latest Version: v3.7** | **Size: ~23 MB** | **Platform: Windows 10/11**
 
 <p>
-   <a href="https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/nse_downloader.exe">
+   <a href="https://github.com/Avisav24/NSE_Data_Downloader/releases/download/v3.7/NSE_Data_Downloader.exe">
     <img src="https://img.shields.io/badge/⬇️%20Download-NSE__Data__Downloader.exe-success?style=for-the-badge&logo=windows&logoColor=white" alt="Download EXE" height="50"/>
   </a>
 </p>
@@ -28,10 +28,10 @@ A powerful desktop application to automatically download **NIFTY 500**, **Market
 **Direct Download URL:**
 
 ```text
-https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/nse_downloader.exe
+https://github.com/Avisav24/NSE_Data_Downloader/releases/download/v3.7/NSE_Data_Downloader.exe
 ```
 
-_Or browse the [releases folder](releases/) for all versions_
+_Or browse the [releases folder](https://github.com/Avisav24/NSE_Data_Downloader/releases) for all versions_
 
 ---
 
@@ -43,18 +43,18 @@ _Or browse the [releases folder](releases/) for all versions_
 
 <div align="center">
 
-### v3.8 Highlights
-
-- **Corporates PIT Reliability Fix**: Improved API cookie refresh and retry flow for `corporates_pit` downloads.
-- **False Alert Fix**: Rename logic now uses the exact downloaded file path to avoid incorrect "file not downloaded" notifications.
-- **Release EXE Updated**: Refreshed `releases/nse_downloader.exe` with latest fixes.
-
 ### v3.7 Highlights
 
-- **New Optional Report**: Added **Corporates PIT (Promoter Insider Trading)** as an optional EOD download.
-- **Frontend Updated**: Added a new checkbox and settings-path entry labeled **Corporates PIT**.
-- **EOD Routing**: Corporate PIT downloads are routed to the same EOD storage flow as other optional files.
-- **Updated Executable**: Rebuilt standalone `.exe` with the new endpoint and UI support.
+- **New Optional Report**: Added **BSE Cash Bhavcopy** as an optional EOD download for BSE equity market data.
+- **Dynamic Date Formatting**: Full support for `{yyyymmdd}` placeholder system in BSE URLs with automatic date substitution.
+- **Enhanced File Naming**: BSE files are named as `BSE_BhavCopy_CM_ddmmyy.csv` with automatic duplicate detection.
+- **Updated Executable**: Rebuilt standalone `.exe` with BSE support and improved HTTP header handling for BSE referer.
+
+### Previous Highlights
+
+**v3.8:** Corporates PIT Reliability Fix, False Alert Fix, Release EXE Updated  
+**v3.6:** Enhanced Cleanup, Improved Reliability  
+**v3.5:** Critical Short Selling Fix, Auto-Migration
 
 ### v3.6 Highlights
 
@@ -76,11 +76,12 @@ _Or browse the [releases folder](releases/) for all versions_
 
 ### 📊 **Expanded Data Suite**
 
-**NEW!** Now supports 15+ reports!
+**NEW!** Now supports 16+ reports!
 
 ✅ **FnO:** OI Spurts, Participant Vol/OI, FII Stats  
 ✅ **Equities:** Bulk/Block Deals, 52 Wk High/Low  
 ✅ **Archives:** Daily Bhavcopies (CM & FO)
+✅ **BSE:** Cash Bhavcopy (Equity Market)
 ✅ **Corporate Filings:** Corporates PIT (CSV)
 
 </td>
@@ -153,6 +154,7 @@ The application now fetches the following reports automatically:
 | :-------------------- | :----------------------------------------------------------------------------------------------------------------------------- |
 | **Derivatives (FnO)** | • OI Spurts (By Underlying)<br>• Combined OI (Archive)<br>• Participant Volume & OI<br>• FII Statistics<br>• FO Bhavcopy (ZIP) |
 | **Capital Market**    | • NIFTY 500 Data<br>• Bulk Deals & Block Deals<br>• 52 Week High/Low<br>• Security Bhavdata (Full)<br>• CM Bhavcopy (ZIP)      |
+| **BSE Market Data**   | • BSE Cash Bhavcopy (Equity)                                                                                                  |
 | **Indices/Others**    | • Indices Close All<br>• PE Details<br>• Corporates PIT                                                                        |
 
 ---

@@ -10,9 +10,14 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=[
+        'matplotlib', 'numpy', 'scipy', 'pandas', 'PIL',
+        'pytest', 'py', 'tkinter.test', 'unittest', 
+        'email', 'xml', 'html', 'sqlite3', 'asyncio',
+        'typing_extensions', 'distutils'
+    ],
     noarchive=False,
-    optimize=0,
+    optimize=2,
 )
 pyz = PYZ(a.pure)
 
@@ -25,9 +30,9 @@ exe = EXE(
     name='NSE_Data_Downloader',
     debug=False,
     bootloader_ignore_signals=False,
-    strip=False,
+    strip=True,
     upx=True,
-    upx_exclude=[],
+    upx_exclude=['vcruntime140.dll', 'msvcp140.dll'],
     runtime_tmpdir=None,
     console=False,
     disable_windowed_traceback=False,

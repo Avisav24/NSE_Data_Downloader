@@ -20,7 +20,7 @@ A powerful desktop application to automatically download **NIFTY 500**, **Market
 **Latest Version: v3.9** | **Size: ~22 MB** | **Platform: Windows 10/11**
 
 <p>
-   <a href="https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/nse_downloader.exe?v=3.9">
+   <a href="https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_Data_Downloader.exe">
     <img src="https://img.shields.io/badge/⬇️%20Download-NSE__Data__Downloader.exe-success?style=for-the-badge&logo=windows&logoColor=white" alt="Download EXE" height="50"/>
   </a>
 </p>
@@ -28,7 +28,7 @@ A powerful desktop application to automatically download **NIFTY 500**, **Market
 **Direct Download URL:**
 
 ```text
-https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/nse_downloader.exe?v=3.9
+https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_Data_Downloader.exe
 ```
 
 _Or browse the [releases folder](releases/) for all versions_
@@ -54,7 +54,7 @@ _Or browse the [releases folder](releases/) for all versions_
 
 - **Corporates PIT Reliability Fix**: Improved API cookie refresh and retry flow for `corporates_pit` downloads.
 - **False Alert Fix**: Rename logic now uses the exact downloaded file path to avoid incorrect "file not downloaded" notifications.
-- **Release EXE Updated**: Refreshed `releases/nse_downloader.exe` with latest fixes.
+- **Release EXE Updated**: Refreshed `releases/NSE_Data_Downloader.exe` with latest fixes.
 
 ### v3.7 Highlights
 
@@ -177,7 +177,7 @@ The application now fetches the following reports automatically:
 <th>Setup Time</th>
 </tr>
 <tr>
-<td><b><a href="https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/nse_downloader.exe?v=3.9">Windows EXE</a></b> ⭐</td>
+<td><b><a href="https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_Data_Downloader.exe">Windows EXE</a></b> ⭐</td>
 <td>End users, Startup apps</td>
 <td>Windows 10/11</td>
 <td>1 min</td>

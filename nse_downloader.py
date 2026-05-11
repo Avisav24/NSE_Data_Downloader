@@ -40,7 +40,8 @@ class NSEDownloader:
             'fii_stats': "https://nsearchives.nseindia.com/content/fo/fii_stats_{dd-Mon-yyyy}.xls",
             'bhavcopy_fo': "https://nsearchives.nseindia.com/content/fo/BhavCopy_NSE_FO_0_0_0_{yyyymmdd}_F_0000.csv.zip",
             'Short_Sell': "https://nsearchives.nseindia.com/archives/equities/shortSelling/shortselling_{ddmmyyyy}.csv",
-            'corporates_pit': "https://www.nseindia.com/api/corporates-pit?index=equities&csv=true"
+            'corporates_pit': "https://www.nseindia.com/api/corporates-pit?index=equities&csv=true",
+            'bse_cash_bhavcopy': "https://www.bseindia.com/download/BhavCopy/Equity/BhavCopy_BSE_CM_0_0_0_{yyyymmdd}_F_0000.CSV"
             
         }
         
@@ -67,7 +68,8 @@ class NSEDownloader:
             'fii_stats': eod_base_path,
             'bhavcopy_fo': eod_base_path,
             'Short_Sell': eod_base_path,
-            'corporates_pit': eod_base_path
+            'corporates_pit': eod_base_path,
+            'bse_cash_bhavcopy': eod_base_path
         }
         
         self.scheduled_times = ["09:30"]  # Now supports multiple times
@@ -105,7 +107,7 @@ class NSEDownloader:
                             'oi_spurts', 'combine_oi', 'pe_detail', 'cm_high_low',
                             'sec_bhavdata', 'block_deals', 'bulk_deals', 'bhavcopy_cm',
                             'ind_close', 'fao_participant_vol', 'fao_participant_oi',
-                            'fii_stats', 'bhavcopy_fo', 'Short_Sell', 'corporates_pit'
+                            'fii_stats', 'bhavcopy_fo', 'Short_Sell', 'corporates_pit', 'bse_cash_bhavcopy'
                         ]
                         eod_base_path = os.path.join(os.path.expanduser("~"), "Downloads", "EOD_Data")
 
@@ -337,6 +339,8 @@ class NSEDownloader:
                 referer = "https://www.nseindia.com/live-market/live-analysis/oi-spurts"
             elif source_name == 'corporates_pit':
                 referer = "https://www.nseindia.com/companies-listing/corporate-filings-insider-trading"
+            elif source_name == 'bse_cash_bhavcopy':
+                referer = "https://www.bseindia.com/"
 
             headers.update({
                 "Referer": referer,
@@ -712,7 +716,8 @@ class NSEDownloader:
                 'bulk_deals': ['bulk', 'bulk_deals'],
                 'oi_spurts': ['By-Underlying', 'oi_spurts'],
                 'Short_Sell': ['shortselling', 'short_sell'],
-                'corporates_pit': ['corporates-pit', 'corporates_pit']
+                'corporates_pit': ['corporates-pit', 'corporates_pit'],
+                'bse_cash_bhavcopy': ['BhavCopy_BSE_CM', 'bse_cash_bhavcopy']
             }
             expected_patterns = filename_patterns.get(source_name, [source_name])
             
@@ -848,6 +853,8 @@ class NSEDownloader:
                 prefix="Short_sell"
             elif source_name == 'corporates_pit':
                 prefix = "Corporates_PIT"
+            elif source_name == 'bse_cash_bhavcopy':
+                prefix = "BSE_BhavCopy_CM"
             else:
                 prefix = source_name
             
@@ -1103,6 +1110,8 @@ class DownloaderGUI:
                 self.source_names[k] = 'CM 52wk HighLow'
             elif k == 'corporates_pit':
                 self.source_names[k] = 'Corporates PIT'
+            elif k == 'bse_cash_bhavcopy':
+                self.source_names[k] = 'BSE Cash Bhavcopy'
             else:
                 self.source_names[k] = k.replace('_', ' ').title()
         

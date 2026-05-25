@@ -19,7 +19,8 @@ class NSEDownloader:
     def __init__(self, gui=None):
         # URLs for both websites
         self.urls = {
-            'nifty500': "https://www.nseindia.com/api/equity-stockIndices?csv=true&index=NIFTY%20500&selectValFormat=crores",
+            'nifty500': " https://www.nseindia.com/api/equity-stock-indices?csv=true&index=NIFTY%20500&selectValFormat=crores",
+           
             'market_indices': "https://www.nseindia.com/api/allIndices?csv=true"
         }
 

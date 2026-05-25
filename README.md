@@ -15,20 +15,20 @@ A powerful desktop application to automatically download **NIFTY 500**, **Market
 
 ## 📥 Quick Download (No Python Needed!)
 
-### 🎯 **Ready-to-Use Windows Executable**
+### 🎯 **Ready-to-Use Windows ZIP Package**
 
 **Latest Version: v3.9** | **Size: ~22 MB** | **Platform: Windows 10/11**
 
 <p>
-   <a href="https://raw.githubusercontent.com/Avisav24/NSE_Data_Downloader/main/releases/NSE_Data_Downloader.exe">
-    <img src="https://img.shields.io/badge/⬇️%20Download-NSE__Data__Downloader.exe-success?style=for-the-badge&logo=windows&logoColor=white" alt="Download EXE" height="50"/>
+    <a href="https://raw.githubusercontent.com/Avisav24/NSE_Data_Downloader/main/releases/NSE_Data_Downloader.zip">
+      <img src="https://img.shields.io/badge/⬇️%20Download-NSE__Data__Downloader.zip-success?style=for-the-badge&logo=windows&logoColor=white" alt="Download ZIP" height="50"/>
   </a>
 </p>
 
 **Direct Download URL:**
 
 ```text
-https://raw.githubusercontent.com/Avisav24/NSE_Data_Downloader/main/releases/NSE_Data_Downloader.exe
+https://raw.githubusercontent.com/Avisav24/NSE_Data_Downloader/main/releases/NSE_Data_Downloader.zip
 ```
 
 _Or browse the [releases folder](releases/) for all versions_
@@ -54,7 +54,7 @@ _Or browse the [releases folder](releases/) for all versions_
 
 - **Corporates PIT Reliability Fix**: Improved API cookie refresh and retry flow for `corporates_pit` downloads.
 - **False Alert Fix**: Rename logic now uses the exact downloaded file path to avoid incorrect "file not downloaded" notifications.
-- **Release EXE Updated**: Refreshed `releases/NSE_Data_Downloader.exe` with latest fixes.
+- **Release Package Updated**: Refreshed `releases/NSE_Data_Downloader.zip` with the latest fixes.
 
 ### v3.7 Highlights
 
@@ -177,7 +177,7 @@ The application now fetches the following reports automatically:
 <th>Setup Time</th>
 </tr>
 <tr>
-<td><b><a href="https://raw.githubusercontent.com/Avisav24/NSE_Data_Downloader/main/releases/NSE_Data_Downloader.exe">Windows EXE</a></b> ⭐</td>
+<td><b><a href="https://raw.githubusercontent.com/Avisav24/NSE_Data_Downloader/main/releases/NSE_Data_Downloader.zip">Windows ZIP</a></b> ⭐</td>
 <td>End users, Startup apps</td>
 <td>Windows 10/11</td>
 <td>1 min</td>
@@ -301,11 +301,12 @@ Examples:
 
 ## 🚀 Installation
 
-### Option 1: Download Executable (Recommended for Windows)
+### Option 1: Download ZIP Package (Recommended for Windows)
 
-1. Download [NSE_Data_Downloader.exe](releases/NSE_Data_Downloader.exe)
-2. Double-click to run
-3. That's it! No installation needed.
+1. Download [NSE_Data_Downloader.zip](releases/NSE_Data_Downloader.zip)
+2. Extract the ZIP file
+3. Double-click `NSE_Data_Downloader.exe`
+4. That's it! No installation needed.
 
 ### Option 2: Run from Source (All Platforms)
 

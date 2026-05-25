@@ -14,7 +14,7 @@ a = Analysis(
         'matplotlib', 'numpy', 'scipy', 'pandas', 'PIL', 'cv2',
         'pytest', 'py', 'tkinter.test', 'unittest', 'test',
         'IPython', 'jupyter', 'notebook', 'jedi', 'parso',
-        'pygments', 'pkg_resources', 'wheel', 'pip',
+        'pygments', 'pkg_resources', 'pip',
         'cryptography'
     ],
     noarchive=False,

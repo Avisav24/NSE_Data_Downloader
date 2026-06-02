@@ -45,6 +45,9 @@ class NSEDownloader:
             'bse_cash_bhavcopy': "https://www.bseindia.com/download/BhavCopy/Equity/BhavCopy_BSE_CM_0_0_0_{yyyymmdd}_F_0000.CSV"
             
         }
+
+        # Optional downloads share the same EOD root by default.
+        self.eod_source_keys = list(self.direct_urls.keys())
         
         self.target_date = datetime.now() # Default to today
         
@@ -104,15 +107,9 @@ class NSEDownloader:
                         self.download_paths.update(config.get('download_paths', {}))
 
                         # Ensure legacy NSE_Data paths for optional files move to EOD_Data
-                        eod_keys = [
-                            'oi_spurts', 'combine_oi', 'pe_detail', 'cm_high_low',
-                            'sec_bhavdata', 'block_deals', 'bulk_deals', 'bhavcopy_cm',
-                            'ind_close', 'fao_participant_vol', 'fao_participant_oi',
-                            'fii_stats', 'bhavcopy_fo', 'Short_Sell', 'corporates_pit', 'bse_cash_bhavcopy'
-                        ]
                         eod_base_path = os.path.join(os.path.expanduser("~"), "Downloads", "EOD_Data")
 
-                        for key in eod_keys:
+                        for key in self.eod_source_keys:
                             current_path = self.download_paths.get(key)
                             if not current_path:
                                 continue
@@ -1268,11 +1265,12 @@ class DownloaderGUI:
         ttk.Label(path_inner_frame, text="Source:", width=10).pack(side=tk.LEFT, padx=2)
         
         # Get all source keys
-        all_source_keys = ['nifty500', 'market_indices'] + list(self.downloader.direct_urls.keys())
+        all_source_keys = ['nifty500', 'market_indices', 'eod_all'] + list(self.downloader.direct_urls.keys())
         # Create readable names mapping
         all_source_names = {k: k.replace('_', ' ').title() for k in all_source_keys}
         all_source_names['nifty500'] = "NIFTY 500"
         all_source_names['market_indices'] = "Market Indices"
+        all_source_names['eod_all'] = "EOD Data (All Optional Files)"
         all_source_names['cm_high_low'] = "CM 52wk HighLow"
         all_source_names['corporates_pit'] = "Corporates PIT"
         
@@ -1319,7 +1317,11 @@ class DownloaderGUI:
         """Update path entry when source changes"""
         name = self.selected_source_name.get()
         key = self.name_to_key.get(name)
-        if key:
+        if key == 'eod_all':
+            eod_paths = [self.downloader.download_paths.get(k, "") for k in self.downloader.eod_source_keys]
+            unique_paths = {p for p in eod_paths if p}
+            self.current_path_var.set(sorted(unique_paths)[0] if len(unique_paths) == 1 else "")
+        elif key:
             path = self.downloader.download_paths.get(key, "")
             self.current_path_var.set(path)
             
@@ -1331,7 +1333,11 @@ class DownloaderGUI:
             folder = filedialog.askdirectory()
             if folder:
                 self.current_path_var.set(folder)
-                self.downloader.download_paths[key] = folder
+                if key == 'eod_all':
+                    for eod_key in self.downloader.eod_source_keys:
+                        self.downloader.download_paths[eod_key] = folder
+                else:
+                    self.downloader.download_paths[key] = folder
                 self.downloader.save_config()
     
     def get_selected_date(self):

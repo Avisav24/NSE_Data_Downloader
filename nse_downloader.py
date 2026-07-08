@@ -1249,9 +1249,11 @@ class DownloaderGUI:
         self.settings_tab = self.notebook.add("Settings")
         
         # --- DASHBOARD TAB ---
+        self.scrollable_dashboard = ctk.CTkScrollableFrame(self.dashboard_tab, fg_color="transparent")
+        self.scrollable_dashboard.pack(fill=tk.BOTH, expand=True)
         
         # Date Selection Section
-        date_frame = ctk.CTkFrame(self.dashboard_tab)
+        date_frame = ctk.CTkFrame(self.scrollable_dashboard)
         date_frame.pack(fill=tk.X, pady=5, padx=5)
         ctk.CTkLabel(date_frame, text="Select Date", font=("Helvetica", 14, "bold")).pack(anchor=tk.W, padx=10, pady=(5,0))
         
@@ -1284,7 +1286,7 @@ class DownloaderGUI:
         ctk.CTkButton(date_inner_frame, text="Set Today", command=self.set_today, width=100, corner_radius=50).pack(side=tk.LEFT, padx=20)
 
         # Download Selection Section
-        select_frame = ctk.CTkFrame(self.dashboard_tab)
+        select_frame = ctk.CTkFrame(self.scrollable_dashboard)
         select_frame.pack(fill=tk.X, pady=5, padx=5)
         
         ctk.CTkLabel(select_frame, text="Select Downloads", font=("Helvetica", 14, "bold")).pack(anchor=tk.W, padx=10, pady=(5,0))
@@ -1372,7 +1374,7 @@ class DownloaderGUI:
         self.opt_schedule_label.pack(anchor=tk.W)
 
         # Time Schedule Section
-        time_frame = ctk.CTkFrame(self.dashboard_tab)
+        time_frame = ctk.CTkFrame(self.scrollable_dashboard)
         time_frame.pack(fill=tk.X, pady=5, padx=5)
         
         ctk.CTkLabel(time_frame, text="Schedule Times", font=("Helvetica", 14, "bold")).pack(anchor=tk.W, padx=10, pady=(5,0))
@@ -1408,7 +1410,7 @@ class DownloaderGUI:
         ctk.CTkLabel(time_inner_frame, text="Example: 09:30, 12:00, 15:30", font=("Helvetica", 11), text_color="gray").pack(anchor=tk.W)
 
         # Control Buttons
-        button_frame = ctk.CTkFrame(self.dashboard_tab, fg_color="transparent")
+        button_frame = ctk.CTkFrame(self.scrollable_dashboard, fg_color="transparent")
         button_frame.pack(pady=15)
         
         self.start_btn = ctk.CTkButton(
@@ -1440,7 +1442,7 @@ class DownloaderGUI:
         self.manual_btn.pack(side=tk.LEFT, padx=10)
         
         # Progress Bar Section
-        progress_frame = ctk.CTkFrame(self.dashboard_tab)
+        progress_frame = ctk.CTkFrame(self.scrollable_dashboard)
         progress_frame.pack(fill=tk.X, pady=5, padx=5)
         
         ctk.CTkLabel(progress_frame, text="Main Progress", font=("Helvetica", 14, "bold")).pack(anchor=tk.W, padx=10, pady=(5,0))
@@ -1466,7 +1468,7 @@ class DownloaderGUI:
         self.progress_label.pack(anchor=tk.W)
         
         info_label = ctk.CTkLabel(
-            self.dashboard_tab,
+            self.scrollable_dashboard,
             text="Downloaded files will be organized into folders by date inside your Downloads directory.",
             font=("Helvetica", 11),
             text_color="gray"

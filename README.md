@@ -20,7 +20,7 @@ A powerful desktop application to automatically download **NIFTY 500**, **Market
 **Latest Version: v4.2** | **Size: ~30 MB** | **Platform: Windows 10/11**
 
 <p>
-      <a href="https://raw.githubusercontent.com/Avisav24/NSE_Data_Downloader/main/releases/NSE_Data_Downloader.exe">
+      <a href="https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_Data_Downloader.exe">
          <img src="https://img.shields.io/badge/⬇️%20Download-NSE__Data__Downloader.exe-success?style=for-the-badge&logo=windows&logoColor=white" alt="Download EXE" height="50"/>
   </a>
 </p>
@@ -28,7 +28,7 @@ A powerful desktop application to automatically download **NIFTY 500**, **Market
 **Direct Download URL:**
 
 ```text
-https://raw.githubusercontent.com/Avisav24/NSE_Data_Downloader/main/releases/NSE_Data_Downloader.exe
+https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_Data_Downloader.exe
 ```
 
 _Or browse the [releases folder](releases/) for all versions_

@@ -43,6 +43,10 @@ _Or browse the [releases folder](releases/) for all versions_
 
 <div align="center">
 
+### 🚀 v5.1 Highlights
+
+- **Option Chain Live Time Naming**: Option chain files are now saved with a specific suffix indicating the live time of download (e.g., `_spot_0_at_1311m.csv`).
+
 ### 🚀 v5.0 Highlights
 
 - **Unified Auto-Scheduling**: A single, clean "Schedule Times" dashboard section now controls the exact times (e.g., `09:30, 12:00, 15:30`) for downloading **NIFTY 50**, **NIFTY 500**, **Market Indices**, and **Option Chain** simultaneously.

@@ -1093,6 +1093,8 @@ class NSEDownloader:
             if source_name in ['nifty500', 'market_indices']:
                 # Main files get time stamp
                 new_filename = f"{prefix}_{date_str}-{time_str}min{extension}"
+            elif source_name == 'option_chain':
+                new_filename = f"{prefix}_{date_str}_spot_0_at_{time_str}m{extension}"
             else:
                 # Optional files get only date
                 new_filename = f"{prefix}_{date_str}{extension}"
@@ -1103,6 +1105,8 @@ class NSEDownloader:
             while os.path.exists(new_filepath):
                 if source_name in ['nifty500', 'market_indices']:
                     new_filename = f"{prefix}_{date_str}-{time_str}min_{counter}{extension}"
+                elif source_name == 'option_chain':
+                    new_filename = f"{prefix}_{date_str}_spot_0_at_{time_str}m_{counter}{extension}"
                 else:
                     new_filename = f"{prefix}_{date_str}_{counter}{extension}"
                 new_filepath = os.path.join(download_path, new_filename)

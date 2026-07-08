@@ -7,6 +7,10 @@ from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import Select
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
@@ -28,6 +32,7 @@ class NSEDownloader:
         # Formats: {ddmmyyyy}, {ddmmyy}, {yyyymmdd}, {dd-Mon-yyyy}
         self.direct_urls = {
             'oi_spurts': "https://www.nseindia.com/api/live-analysis-oi-spurts-underlyings?type=underlying&csv=true&partialFileName=By-Underlying",
+            'option_chain': "https://www.nseindia.com/option-chain",
             'combine_oi': "https://nsearchives.nseindia.com/archives/nsccl/mwpl/combineoi_{ddmmyyyy}.zip",
             'pe_detail': "https://nsearchives.nseindia.com/content/equities/peDetail/PE_{ddmmyy}.csv",
             'cm_high_low': "https://nsearchives.nseindia.com/content/CM_52_wk_High_low_{ddmmyyyy}.csv",
@@ -59,6 +64,7 @@ class NSEDownloader:
             'nifty500': os.path.join(nse_base_path, "NIFTY500"),
             'market_indices': os.path.join(nse_base_path, "Market_Indices"),
             'oi_spurts': eod_base_path,
+            'option_chain': eod_base_path,
             'combine_oi': eod_base_path,
             'pe_detail': eod_base_path,
             'cm_high_low': eod_base_path,
@@ -82,7 +88,7 @@ class NSEDownloader:
         self.auto_mode = False  # Auto mode: scheduler runs 8 AM - 8 PM
         self.weekend_downloads_enabled = False  # Allow downloads on weekends
         self.last_weekend_notification = None  # Track last weekend notification date
-        self.enabled_downloads = [] # List of enabled optional downloads
+        self.enabled_downloads = list(self.direct_urls.keys()) # List of enabled optional downloads
         self.config_file = "config.json"
         self.gui = gui
         self.headless_mode = True  # Run browser hidden in background
@@ -415,6 +421,157 @@ class NSEDownloader:
             print(f"Error downloading {source_name}: {str(e)}")
             return False
 
+    def download_browser_click_file(self, driver, source_name, page_url, download_path, click_selector, progress_offset=0, progress_bar="optional"):
+        """Download a file by opening a page in the browser and clicking a download element."""
+        abs_download_path = os.path.abspath(download_path)
+        try:
+            if not os.path.exists(abs_download_path):
+                os.makedirs(abs_download_path)
+
+            logging.info(f"Browser-click download for {source_name} to: {abs_download_path}")
+
+            if self.gui:
+                self.gui.update_progress(progress_offset, f"Opening {source_name} page...", bar=progress_bar)
+
+            if not driver:
+                return False
+
+            driver.execute_cdp_cmd("Browser.setDownloadBehavior", {
+                "behavior": "allow",
+                "downloadPath": abs_download_path,
+                "eventsEnabled": True
+            })
+            driver.execute_cdp_cmd("Page.setDownloadBehavior", {
+                "behavior": "allow",
+                "downloadPath": abs_download_path
+            })
+
+            start_time = time.time()
+            before_files = set(os.listdir(abs_download_path))
+
+            driver.get(page_url)
+
+            if source_name == 'option_chain':
+                self.prepare_option_chain_page(driver)
+
+            wait = WebDriverWait(driver, 30)
+            download_button = wait.until(EC.element_to_be_clickable((By.ID, click_selector)))
+            driver.execute_script("arguments[0].click();", download_button)
+
+            if self.gui:
+                self.gui.update_progress(progress_offset + 5, f"Downloading {source_name}...", bar=progress_bar)
+
+            timeout = 60
+            poll_interval = 0.5
+            elapsed = 0.0
+
+            if source_name == 'option_chain':
+                # Option chain is a data-URI download; keep the browser flow but hint a filename.
+                driver.execute_script("arguments[0].setAttribute('download', arguments[1]);", download_button, f"Option_Chain_{datetime.now().strftime('%d%m%y')}.csv")
+
+            while elapsed < timeout:
+                candidate_files = []
+                for filename in os.listdir(abs_download_path):
+                    full_path = os.path.join(abs_download_path, filename)
+                    if not os.path.isfile(full_path):
+                        continue
+                    lower_name = filename.lower()
+                    if lower_name.endswith(('.crdownload', '.tmp', '.part')):
+                        continue
+                    if filename in before_files:
+                        continue
+                    try:
+                        if os.path.getmtime(full_path) >= start_time - 5:
+                            candidate_files.append(full_path)
+                    except OSError:
+                        continue
+
+                if candidate_files:
+                    latest_file = max(candidate_files, key=os.path.getmtime)
+                    size1 = os.path.getsize(latest_file)
+                    time.sleep(poll_interval)
+                    if os.path.exists(latest_file):
+                        size2 = os.path.getsize(latest_file)
+                        if size1 > 0 and size1 == size2:
+                            logging.info(f"Browser-click download successful for {source_name}: {latest_file}")
+                            return latest_file
+
+                time.sleep(poll_interval)
+                elapsed += poll_interval
+
+            logging.warning(f"Browser-click download timed out for {source_name}")
+            return False
+        except Exception as e:
+            logging.error(f"Error browser-downloading {source_name}: {str(e)}")
+            print(f"Error browser-downloading {source_name}: {str(e)}")
+            return False
+
+    def prepare_option_chain_page(self, driver, symbol="NIFTY"):
+        """Set a stable option-chain selection before downloading the CSV."""
+        try:
+            wait = WebDriverWait(driver, 30)
+
+            # Keep the main contract view on NIFTY, then choose the symbol and earliest available expiry.
+            view_select = wait.until(lambda d: self.find_view_contract_select(d))
+            if view_select:
+                Select(view_select).select_by_visible_text(symbol)
+
+            symbol_select = wait.until(lambda d: self.find_symbol_select(d, symbol))
+            if symbol_select:
+                Select(symbol_select).select_by_visible_text(symbol)
+
+            def expiry_ready(driver):
+                expiry_select = self.find_expiry_select(driver)
+                if not expiry_select:
+                    return False
+                options = [opt.text.strip() for opt in Select(expiry_select).options if opt.text.strip() and opt.text.strip().lower() != 'select']
+                return expiry_select if options else False
+
+            expiry_select = wait.until(expiry_ready)
+            expiry_options = [opt.text.strip() for opt in Select(expiry_select).options if opt.text.strip() and opt.text.strip().lower() != 'select']
+            if expiry_options:
+                Select(expiry_select).select_by_visible_text(expiry_options[0])
+
+            time.sleep(1.5)
+            return True
+        except Exception as e:
+            logging.warning(f"Could not preselect option chain values: {e}")
+            return False
+
+    def find_view_contract_select(self, driver):
+        """Find the top-level contract select, which has a small fixed set of index choices."""
+        for element in driver.find_elements(By.TAG_NAME, "select"):
+            try:
+                option_texts = {opt.text.strip() for opt in Select(element).options if opt.text.strip()}
+                if {'NIFTY', 'NIFTYNXT50', 'FINNIFTY', 'BANKNIFTY', 'MIDCPNIFTY'}.issubset(option_texts):
+                    return element
+            except Exception:
+                continue
+        return None
+
+    def find_symbol_select(self, driver, symbol):
+        """Find the symbol select, which has a long list of equities and a placeholder option."""
+        for element in driver.find_elements(By.TAG_NAME, "select"):
+            try:
+                select_widget = Select(element)
+                option_texts = [opt.text.strip() for opt in select_widget.options if opt.text.strip()]
+                if len(option_texts) > 20 and option_texts[0].lower() == 'select' and symbol in option_texts:
+                    return element
+            except Exception:
+                continue
+        return None
+
+    def find_expiry_select(self, driver):
+        """Find the expiry select by looking for a select with date-like options."""
+        for element in driver.find_elements(By.TAG_NAME, "select"):
+            try:
+                options = [opt.text.strip() for opt in Select(element).options if opt.text.strip() and opt.text.strip().lower() != 'select']
+                if options and any('-' in option for option in options):
+                    return element
+            except Exception:
+                continue
+        return None
+
     def download_data(self, mode='all'):
         """
         Download CSV files from NSE sources
@@ -518,14 +675,25 @@ class NSEDownloader:
                         # Format URL with target date
                         formatted_url = self.get_formatted_url(url, self.target_date)
                         print(f"Downloading {key} from: {formatted_url}")
-                        
-                        success = self.download_direct_file(
-                            driver,
-                            key,
-                            formatted_url,
-                            self.download_paths[key],
-                            progress_offset=progress
-                        )
+                        if key == 'option_chain':
+                            success = self.download_browser_click_file(
+                                driver,
+                                key,
+                                formatted_url,
+                                self.download_paths[key],
+                                'download_csv',
+                                progress_offset=progress,
+                                progress_bar='optional'
+                            )
+                        else:
+                            success = self.download_direct_file(
+                                driver,
+                                key,
+                                formatted_url,
+                                self.download_paths[key],
+                                progress_offset=progress,
+                                progress_bar='optional'
+                            )
                         direct_download_results[key] = success
                         time.sleep(0.5)  # Smaller delay between downloads
             
@@ -713,6 +881,7 @@ class NSEDownloader:
                 'block_deals': ['block', 'block_deals'],
                 'bulk_deals': ['bulk', 'bulk_deals'],
                 'oi_spurts': ['By-Underlying', 'oi_spurts'],
+                'option_chain': ['option-chain', 'option_chain', 'optionchain', 'download_csv'],
                 'Short_Sell': ['shortselling', 'short_sell'],
                 'corporates_pit': ['corporates-pit', 'corporates_pit'],
                 'bse_cash_bhavcopy': ['BhavCopy_BSE_CM', 'bse_cash_bhavcopy']
@@ -825,6 +994,8 @@ class NSEDownloader:
                 prefix = "CM_52wk_HighLow"
             elif source_name == 'oi_spurts':
                 prefix = "OI_Spurts"
+            elif source_name == 'option_chain':
+                prefix = "Option_Chain"
             elif source_name == 'combine_oi':
                 prefix = "CombineOI"
             elif source_name == 'pe_detail':
@@ -987,7 +1158,48 @@ class DownloaderGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("NSE Data Downloader")
-        self.root.geometry("900x640")  # High-res but tighter height to reduce unused space
+        self.root.geometry("1920x1080")  # Full HD
+        try:
+            self.root.state('zoomed')  # Maximize
+        except:
+            pass
+        self.root.configure(bg="#f5f5f7")
+        
+        # Apply Apple-inspired aesthetic
+        style = ttk.Style()
+        style.theme_use('clam')
+        style.configure(".", background="#f5f5f7", foreground="#1d1d1f", font=("Helvetica", 11))
+        style.configure("TFrame", background="#f5f5f7")
+        style.configure("TLabel", background="#f5f5f7", foreground="#1d1d1f")
+        style.configure("TCheckbutton", background="#f5f5f7", foreground="#1d1d1f", focuscolor="none", padding=(0, 2))
+        style.configure("TRadiobutton", background="#f5f5f7", foreground="#1d1d1f")
+        
+        # Hide native Checkbutton indicator in clam theme so we can use custom text ticks
+        style.layout('TCheckbutton', [
+            ('Checkbutton.padding', {'sticky': 'nswe', 'children': [
+                ('Checkbutton.focus', {'side': 'left', 'sticky': 'w', 'children': [
+                    ('Checkbutton.label', {'sticky': 'nswe'})
+                ]})
+            ]})
+        ])
+        
+        # Pill-like CTAs
+        style.configure("TButton", 
+                        background="#0066cc", 
+                        foreground="#ffffff", 
+                        borderwidth=0, 
+                        focusthickness=0, 
+                        focuscolor="none",
+                        padding=(20, 10),
+                        font=("Helvetica", 11, "bold"))
+        style.map("TButton", 
+                  background=[('active', '#0071e3'), ('disabled', '#d2d2d7')],
+                  foreground=[('disabled', '#7a7a7a')])
+                  
+        # LabelFrames without borders
+        style.configure("TLabelframe", background="#f5f5f7", borderwidth=0, relief="flat")
+        style.configure("TLabelframe.Label", background="#f5f5f7", font=("Helvetica", 12, "bold"))
+
         # Increase Tk scaling slightly to render crisp UI on HD screens
         try:
             self.root.tk.call('tk', 'scaling', 1.25)
@@ -1004,33 +1216,25 @@ class DownloaderGUI:
         
         self.create_widgets()
         
-        # Restore previous selections if config exists
-        if self.downloader.enabled_downloads:
-            # First deselect all (since default is now True)
-            for var in self.selected_downloads.values():
-                var.set(False)
-            # Then select only enabled ones
-            for key, var in self.selected_downloads.items():
-                if key in self.downloader.enabled_downloads:
-                    var.set(True)
-        
         # Auto-start scheduler if auto mode is enabled and time is between 8 AM and 8 PM
         if self.downloader.auto_mode:
             self.check_and_start_auto_mode()
     
     def create_widgets(self):
-        # Title - smaller and more compact
+        # Title - Apple tight headline
         title_label = tk.Label(
             self.root,
             text="NSE Data Downloader",
-            font=("Arial", 11, "bold"),
-            pady=0
+            font=("Helvetica", 24, "bold"),
+            bg="#f5f5f7",
+            fg="#1d1d1f",
+            pady=20
         )
         title_label.pack()
         
-        # Main frame - reduced padding
-        main_frame = ttk.Frame(self.root, padding="2")
-        main_frame.pack(fill=tk.X, expand=False)
+        # Main frame
+        main_frame = ttk.Frame(self.root, padding="20")
+        main_frame.pack(fill=tk.BOTH, expand=True)
         
         # Create Notebook (Tabs)
         self.notebook = ttk.Notebook(main_frame)
@@ -1116,10 +1320,20 @@ class DownloaderGUI:
         # Use grid layout for checkboxes (3 columns)
         row = 0
         col = 0
+        self.checkbox_widgets = {}
         for key, name in self.source_names.items():
-            var = tk.BooleanVar(value=True) # Default checked
+            is_checked = key in self.downloader.enabled_downloads
+            var = tk.BooleanVar(value=is_checked)
             self.selected_downloads[key] = var
-            ttk.Checkbutton(checkbox_frame, text=name, variable=var).grid(row=row, column=col, sticky=tk.W, padx=5, pady=1)
+            tick_char = "✔" if is_checked else "☐"
+            cb = ttk.Checkbutton(
+                checkbox_frame, 
+                text=f"{tick_char} {name}", 
+                variable=var, 
+                command=lambda k=key: self.on_checkbox_toggle(k)
+            )
+            cb.grid(row=row, column=col, sticky=tk.W, padx=10, pady=5)
+            self.checkbox_widgets[key] = cb
             
             col += 1
             if col > 2: # 3 columns
@@ -1163,22 +1377,24 @@ class DownloaderGUI:
         
         # Auto Mode Checkbox
         self.auto_mode_var = tk.BooleanVar(value=self.downloader.auto_mode)
-        auto_mode_check = ttk.Checkbutton(
+        is_auto = self.auto_mode_var.get()
+        self.auto_mode_check = ttk.Checkbutton(
             time_frame,
-            text="Auto Mode (8 AM - 8 PM, auto-start scheduler)",
+            text=f"{'✔' if is_auto else '☐'} Auto Mode (8 AM - 8 PM, auto-start scheduler)",
             variable=self.auto_mode_var,
             command=self.toggle_auto_mode
         )
-        auto_mode_check.pack(anchor=tk.W, padx=3, pady=1)
+        self.auto_mode_check.pack(anchor=tk.W, padx=3, pady=1)
         
         # Weekend Downloads Checkbox
-        weekend_check = ttk.Checkbutton(
+        is_weekend = self.weekend_downloads_var.get()
+        self.weekend_check = ttk.Checkbutton(
             time_frame,
-            text="Enable Weekend Downloads (Saturday & Sunday)",
+            text=f"{'✔' if is_weekend else '☐'} Enable Weekend Downloads (Saturday & Sunday)",
             variable=self.weekend_downloads_var,
             command=self.toggle_weekend_downloads
         )
-        weekend_check.pack(anchor=tk.W, padx=3, pady=1)
+        self.weekend_check.pack(anchor=tk.W, padx=3, pady=1)
         
         ttk.Label(time_frame, text="Times (HH:MM, 24-hour, comma separated):", font=("Arial", 8)).pack(anchor=tk.W, padx=3, pady=1)
         
@@ -1303,15 +1519,27 @@ class DownloaderGUI:
         self.month_var.set(now.strftime("%B"))
         self.year_var.set(now.strftime("%Y"))
         
+    def on_checkbox_toggle(self, changed_key=None):
+        """Save selected downloads state when a checkbox is clicked"""
+        if changed_key and hasattr(self, 'checkbox_widgets'):
+            is_checked = self.selected_downloads[changed_key].get()
+            tick_char = "✔" if is_checked else "☐"
+            self.checkbox_widgets[changed_key].config(text=f"{tick_char} {self.source_names[changed_key]}")
+            
+        self.downloader.enabled_downloads = [k for k, v in self.selected_downloads.items() if v.get()]
+        self.downloader.save_config()
+
     def select_all(self):
         """Select all optional downloads"""
-        for var in self.selected_downloads.values():
+        for k, var in self.selected_downloads.items():
             var.set(True)
+            self.on_checkbox_toggle(k)
             
     def deselect_all(self):
         """Deselect all optional downloads"""
-        for var in self.selected_downloads.values():
+        for k, var in self.selected_downloads.items():
             var.set(False)
+            self.on_checkbox_toggle(k)
         
     def on_source_change(self, event):
         """Update path entry when source changes"""
@@ -1575,7 +1803,10 @@ class DownloaderGUI:
     
     def toggle_auto_mode(self):
         """Toggle auto mode and save state"""
-        self.downloader.auto_mode = self.auto_mode_var.get()
+        is_checked = self.auto_mode_var.get()
+        if hasattr(self, 'auto_mode_check'):
+            self.auto_mode_check.config(text=f"{'✔' if is_checked else '☐'} Auto Mode (8 AM - 8 PM, auto-start scheduler)")
+        self.downloader.auto_mode = is_checked
         self.downloader.save_config()
         
         if self.downloader.auto_mode:
@@ -1588,7 +1819,10 @@ class DownloaderGUI:
     
     def toggle_weekend_downloads(self):
         """Toggle weekend downloads and save state"""
-        self.downloader.weekend_downloads_enabled = self.weekend_downloads_var.get()
+        is_checked = self.weekend_downloads_var.get()
+        if hasattr(self, 'weekend_check'):
+            self.weekend_check.config(text=f"{'✔' if is_checked else '☐'} Enable Weekend Downloads (Saturday & Sunday)")
+        self.downloader.weekend_downloads_enabled = is_checked
         self.downloader.save_config()
         logging.info(f"Weekend downloads {'enabled' if self.downloader.weekend_downloads_enabled else 'disabled'}")
     

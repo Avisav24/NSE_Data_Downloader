@@ -9,7 +9,7 @@
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)](https://github.com/Avisav24/NSE_Data_Downloader)
 [![Downloads](https://img.shields.io/github/downloads/Avisav24/NSE_Data_Downloader/total.svg)](https://github.com/Avisav24/NSE_Data_Downloader/releases)
 
-A powerful desktop application to automatically download **NIFTY 500**, **Market Indices**, and **14+ Critical NSE Reports** including **Bhavcopies, FnO Stats, and Bulk/Block Deals**. Features scheduled automation, smart file management, and **weekend-aware scheduling**.
+A powerful desktop application to automatically download **NIFTY 500**, **Market Indices**, and **15+ Critical NSE Reports** including **Bhavcopies, FnO Stats, Option Chain, and Bulk/Block Deals**. Features scheduled automation, smart file management, and **weekend-aware scheduling**.
 
 ---
 
@@ -17,7 +17,7 @@ A powerful desktop application to automatically download **NIFTY 500**, **Market
 
 ### 🎯 **Ready-to-Use Windows Executable**
 
-**Latest Version: v3.9** | **Size: ~22 MB** | **Platform: Windows 10/11**
+**Latest Version: v4.0** | **Size: ~22 MB** | **Platform: Windows 10/11**
 
 <p>
       <a href="https://raw.githubusercontent.com/Avisav24/NSE_Data_Downloader/main/releases/NSE_Data_Downloader.exe">
@@ -42,6 +42,12 @@ _Or browse the [releases folder](releases/) for all versions_
 ## ✨ What's New
 
 <div align="center">
+
+### v4.0 Highlights
+
+- **Complete UI Refresh**: Apple-inspired "Parchment" aesthetic with full HD scaling support and Action Blue CTAs.
+- **Improved Checkboxes**: Checkboxes correctly default to all-selected and use tick indicators instead of default crosses.
+- **Instant Save**: Checkbox toggles instantly save your configuration to `config.json`.
 
 ### v3.9 Highlights
 
@@ -85,7 +91,7 @@ _Or browse the [releases folder](releases/) for all versions_
 
 **NEW!** Now supports 16+ reports from NSE & BSE!
 
-✅ **FnO:** OI Spurts, Participant Vol/OI, FII Stats  
+✅ **FnO:** OI Spurts, Participant Vol/OI, FII Stats, Option Chain CSV
 ✅ **Equities:** Bulk/Block Deals, 52 Wk High/Low  
 ✅ **Archives:** Daily Bhavcopies (CM & FO)
 ✅ **Corporate Filings:** Corporates PIT (CSV)
@@ -161,7 +167,7 @@ The application now fetches the following reports automatically:
 | :-------------------- | :----------------------------------------------------------------------------------------------------------------------------- |
 | **Derivatives (FnO)** | • OI Spurts (By Underlying)<br>• Combined OI (Archive)<br>• Participant Volume & OI<br>• FII Statistics<br>• FO Bhavcopy (ZIP) |
 | **Capital Market**    | • NIFTY 500 Data<br>• Bulk Deals & Block Deals<br>• 52 Week High/Low<br>• Security Bhavdata (Full)<br>• CM Bhavcopy (ZIP)      |
-| **Indices/Others**    | • Indices Close All<br>• PE Details<br>• Corporates PIT                                                                        |
+| **Indices/Others**    | • Indices Close All<br>• PE Details<br>• Corporates PIT<br>• Option Chain CSV                                                  |
 
 ---
 

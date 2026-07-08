@@ -1208,7 +1208,7 @@ class DownloaderGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("NSE Data Downloader")
-        self.root.geometry("1100x800")
+        self.root.geometry("800x650")
         
         # Configure CTk appearance
         ctk.set_appearance_mode("System")
@@ -1343,35 +1343,7 @@ class DownloaderGUI:
                 col = 0
                 row += 1
 
-        # Optional Progress Bar
-        opt_prog_frame = ctk.CTkFrame(select_frame, fg_color="transparent")
-        opt_prog_frame.pack(fill=tk.X, padx=10, pady=2)
-        
-        ctk.CTkLabel(opt_prog_frame, text="Optional Progress:", font=("Helvetica", 12, "bold")).pack(anchor=tk.W)
-        
-        self.opt_progress_bar = ctk.CTkProgressBar(
-            opt_prog_frame,
-            corner_radius=50,
-            progress_color="#28a745", # Green
-            height=12
-        )
-        self.opt_progress_bar.set(0)
-        self.opt_progress_bar.pack(fill=tk.X, pady=5)
-        
-        self.opt_progress_label = ctk.CTkLabel(
-            opt_prog_frame, 
-            text="Ready", 
-            font=("Helvetica", 12)
-        )
-        self.opt_progress_label.pack(anchor=tk.W)
 
-        self.opt_schedule_label = ctk.CTkLabel(
-            opt_prog_frame,
-            text=f"Auto-download runs daily at {self.downloader.optional_download_time}",
-            font=("Helvetica", 11),
-            text_color="gray"
-        )
-        self.opt_schedule_label.pack(anchor=tk.W)
 
         # Time Schedule Section
         time_frame = ctk.CTkFrame(self.scrollable_dashboard)
@@ -1445,27 +1417,46 @@ class DownloaderGUI:
         progress_frame = ctk.CTkFrame(self.scrollable_dashboard)
         progress_frame.pack(fill=tk.X, pady=2, padx=2)
         
-        ctk.CTkLabel(progress_frame, text="Main Progress", font=("Helvetica", 14, "bold")).pack(anchor=tk.W, padx=10, pady=(2,0))
+        ctk.CTkLabel(progress_frame, text="Downloads Progress", font=("Helvetica", 14, "bold")).pack(anchor=tk.W, padx=10, pady=(2,0))
         
         prog_inner = ctk.CTkFrame(progress_frame, fg_color="transparent")
         prog_inner.pack(fill=tk.X, padx=10, pady=5)
         
+        # Main Progress
         ctk.CTkLabel(prog_inner, text="Main (NIFTY 50, NIFTY 500 & Indices):", font=("Helvetica", 12, "bold")).pack(anchor=tk.W)
         self.progress_bar = ctk.CTkProgressBar(
             prog_inner,
-            height=16,
+            height=12,
             corner_radius=50,
             progress_color="#28a745" # Green
         )
         self.progress_bar.set(0)
-        self.progress_bar.pack(pady=5, fill=tk.X)
+        self.progress_bar.pack(pady=2, fill=tk.X)
         
         self.progress_label = ctk.CTkLabel(
             prog_inner, 
             text="Ready", 
-            font=("Helvetica", 12)
+            font=("Helvetica", 11)
         )
         self.progress_label.pack(anchor=tk.W)
+
+        # Optional Progress
+        ctk.CTkLabel(prog_inner, text=f"Optionals (Runs daily at {self.downloader.optional_download_time}):", font=("Helvetica", 12, "bold")).pack(anchor=tk.W, pady=(5,0))
+        self.opt_progress_bar = ctk.CTkProgressBar(
+            prog_inner,
+            height=12,
+            corner_radius=50,
+            progress_color="#28a745" # Green
+        )
+        self.opt_progress_bar.set(0)
+        self.opt_progress_bar.pack(pady=2, fill=tk.X)
+        
+        self.opt_progress_label = ctk.CTkLabel(
+            prog_inner, 
+            text="Ready", 
+            font=("Helvetica", 11)
+        )
+        self.opt_progress_label.pack(anchor=tk.W)
         
         # --- SETTINGS TAB ---
         self.create_settings_widgets()

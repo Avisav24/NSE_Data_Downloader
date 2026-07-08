@@ -17,7 +17,7 @@ A powerful desktop application to automatically download **NIFTY 500**, **Market
 
 ### 🎯 **Ready-to-Use Windows Executable**
 
-**Latest Version: v5.0** | **Size: ~30 MB** | **Platform: Windows 10/11**
+**Latest Version: v5.1** | **Size: ~30 MB** | **Platform: Windows 10/11**
 
 <p>
       <a href="https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_Data_Downloader.exe">
@@ -45,7 +45,8 @@ _Or browse the [releases folder](releases/) for all versions_
 
 ### 🚀 v5.1 Highlights
 
-- **Option Chain Live Time Naming**: Option chain files are now saved with a specific suffix indicating the live time of download (e.g., `_spot_0_at_1311m.csv`).
+- **Clean Live Time Naming**: Unified the naming convention for NIFTY 50, NIFTY 500, Market Indices, and Option Chain. All files now use a clean time suffix (e.g., `-1935.csv` instead of `-1935min.csv`), and Option Chain seamlessly includes the live spot price (e.g., `_spot_24320.15-1935.csv`).
+- **Robust Background Downloads**: Added global folder monitoring so that headless Chrome Data-URI downloads are caught instantly, eliminating timeouts.
 
 ### 🚀 v5.0 Highlights
 

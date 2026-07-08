@@ -452,7 +452,21 @@ class NSEDownloader:
             })
 
             start_time = time.time()
-            before_files = set(os.listdir(abs_download_path))
+            default_downloads = os.path.expanduser("~/Downloads")
+            directories_to_check = [abs_download_path]
+            if os.path.exists(default_downloads) and default_downloads != abs_download_path:
+                directories_to_check.append(default_downloads)
+                
+            for path in getattr(self, 'download_paths', {}).values():
+                if os.path.exists(path) and path not in directories_to_check:
+                    directories_to_check.append(path)
+
+            before_files = {}
+            for d in directories_to_check:
+                try:
+                    before_files[d] = set(os.listdir(d))
+                except OSError:
+                    before_files[d] = set()
 
             driver.get(page_url)
 
@@ -476,20 +490,25 @@ class NSEDownloader:
 
             while elapsed < timeout:
                 candidate_files = []
-                for filename in os.listdir(abs_download_path):
-                    full_path = os.path.join(abs_download_path, filename)
-                    if not os.path.isfile(full_path):
-                        continue
-                    lower_name = filename.lower()
-                    if lower_name.endswith(('.crdownload', '.tmp', '.part')):
-                        continue
-                    if filename in before_files:
-                        continue
+                for d in directories_to_check:
                     try:
-                        if os.path.getmtime(full_path) >= start_time - 5:
-                            candidate_files.append(full_path)
+                        current_files = os.listdir(d)
                     except OSError:
                         continue
+                    for filename in current_files:
+                        full_path = os.path.join(d, filename)
+                        if not os.path.isfile(full_path):
+                            continue
+                        lower_name = filename.lower()
+                        if lower_name.endswith(('.crdownload', '.tmp', '.part')):
+                            continue
+                        if filename in before_files[d]:
+                            continue
+                        try:
+                            if os.path.getmtime(full_path) >= start_time - 5:
+                                candidate_files.append(full_path)
+                        except OSError:
+                            continue
 
                 if candidate_files:
                     latest_file = max(candidate_files, key=os.path.getmtime)
@@ -538,6 +557,25 @@ class NSEDownloader:
                 Select(expiry_select).select_by_visible_text(expiry_options[0])
 
             time.sleep(1.5)
+            
+            # Try to extract the live spot price
+            try:
+                spot_script = """
+                let el = document.getElementById('equity_underlyingVal');
+                if (el && el.innerText) {
+                    let parts = el.innerText.trim().split(' ');
+                    if (parts.length > 0) {
+                        return parts[parts.length - 1].replace(/,/g, '');
+                    }
+                }
+                return '0';
+                """
+                spot_val = driver.execute_script(spot_script)
+                self.current_spot_price = spot_val if spot_val else '0'
+            except Exception as e:
+                logging.warning(f"Could not extract spot price: {e}")
+                self.current_spot_price = '0'
+
             return True
         except Exception as e:
             logging.warning(f"Could not preselect option chain values: {e}")
@@ -792,6 +830,17 @@ class NSEDownloader:
                         failed_downloads.append("Market Indices")
                 else:
                     failed_downloads.append("Market Indices")
+
+                if success_option_chain:
+                    # Update progress: Processing Option Chain file
+                    preferred_file = success_option_chain if isinstance(success_option_chain, str) else None
+                    renamed = self.rename_downloaded_file('option_chain', self.download_paths['option_chain'], skip_stability_check=True, progress_start=92, progress_end=100, progress_bar="main", download_start_time=download_start_time, preferred_file=preferred_file)
+                    if renamed:
+                        renamed_files.append(renamed)
+                    else:
+                        failed_downloads.append("Option Chain")
+                else:
+                    failed_downloads.append("Option Chain")
             
             # Rename optional downloads
             if hasattr(self, 'direct_urls') and mode in ['all', 'optionals']:
@@ -917,6 +966,10 @@ class NSEDownloader:
             default_downloads = os.path.join(os.path.expanduser("~"), "Downloads")
             if default_downloads != download_path and os.path.exists(default_downloads):
                 paths_to_check.append(default_downloads)
+                
+            for path in getattr(self, 'download_paths', {}).values():
+                if os.path.exists(path) and path not in paths_to_check:
+                    paths_to_check.append(path)
             
             # Ensure download path exists
             if not os.path.exists(download_path):
@@ -1090,11 +1143,12 @@ class NSEDownloader:
                 prefix = source_name
             
             # Format: prefix_ddmmyy for optional files (no time suffix for optional downloads)
-            if source_name in ['nifty500', 'market_indices']:
+            if source_name in ['nifty50', 'nifty500', 'market_indices']:
                 # Main files get time stamp
-                new_filename = f"{prefix}_{date_str}-{time_str}min{extension}"
+                new_filename = f"{prefix}_{date_str}-{time_str}{extension}"
             elif source_name == 'option_chain':
-                new_filename = f"{prefix}_{date_str}_spot_0_at_{time_str}m{extension}"
+                spot_val = getattr(self, 'current_spot_price', '0')
+                new_filename = f"{prefix}_{date_str}_spot_{spot_val}-{time_str}{extension}"
             else:
                 # Optional files get only date
                 new_filename = f"{prefix}_{date_str}{extension}"
@@ -1103,10 +1157,11 @@ class NSEDownloader:
             # If file with same name exists, add counter
             counter = 1
             while os.path.exists(new_filepath):
-                if source_name in ['nifty500', 'market_indices']:
-                    new_filename = f"{prefix}_{date_str}-{time_str}min_{counter}{extension}"
+                if source_name in ['nifty50', 'nifty500', 'market_indices']:
+                    new_filename = f"{prefix}_{date_str}-{time_str}_{counter}{extension}"
                 elif source_name == 'option_chain':
-                    new_filename = f"{prefix}_{date_str}_spot_0_at_{time_str}m_{counter}{extension}"
+                    spot_val = getattr(self, 'current_spot_price', '0')
+                    new_filename = f"{prefix}_{date_str}_spot_{spot_val}-{time_str}_{counter}{extension}"
                 else:
                     new_filename = f"{prefix}_{date_str}_{counter}{extension}"
                 new_filepath = os.path.join(download_path, new_filename)

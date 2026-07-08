@@ -1208,7 +1208,7 @@ class DownloaderGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("NSE Data Downloader")
-        self.root.geometry("800x650")
+        self.root.geometry("750x580")
         
         # Configure CTk appearance
         ctk.set_appearance_mode("System")
@@ -1422,8 +1422,8 @@ class DownloaderGUI:
         prog_inner = ctk.CTkFrame(progress_frame, fg_color="transparent")
         prog_inner.pack(fill=tk.X, padx=10, pady=5)
         
-        # Main Progress
-        ctk.CTkLabel(prog_inner, text="Main (NIFTY 50, NIFTY 500 & Indices):", font=("Helvetica", 12, "bold")).pack(anchor=tk.W)
+        # Default Progress
+        ctk.CTkLabel(prog_inner, text="Default (NIFTY 50, NIFTY 500 & Indices):", font=("Helvetica", 12, "bold")).pack(anchor=tk.W)
         self.progress_bar = ctk.CTkProgressBar(
             prog_inner,
             height=12,

@@ -27,14 +27,14 @@ class NSEDownloader:
             'nifty50': "https://www.nseindia.com/api/equity-stock-indices?csv=true&index=NIFTY%2050&selectValFormat=crores",
             'nifty500': " https://www.nseindia.com/api/equity-stock-indices?csv=true&index=NIFTY%20500&selectValFormat=crores",
            
-            'market_indices': "https://www.nseindia.com/api/allIndices?csv=true"
+            'market_indices': "https://www.nseindia.com/api/allIndices?csv=true",
+            'option_chain': "https://www.nseindia.com/option-chain"
         }
 
         # Direct download URLs with placeholders
         # Formats: {ddmmyyyy}, {ddmmyy}, {yyyymmdd}, {dd-Mon-yyyy}
         self.direct_urls = {
             'oi_spurts': "https://www.nseindia.com/api/live-analysis-oi-spurts-underlyings?type=underlying&csv=true&partialFileName=By-Underlying",
-            'option_chain': "https://www.nseindia.com/option-chain",
             'combine_oi': "https://nsearchives.nseindia.com/archives/nsccl/mwpl/combineoi_{ddmmyyyy}.zip",
             'pe_detail': "https://nsearchives.nseindia.com/content/equities/peDetail/PE_{ddmmyy}.csv",
             'cm_high_low': "https://nsearchives.nseindia.com/content/CM_52_wk_High_low_{ddmmyyyy}.csv",
@@ -66,8 +66,8 @@ class NSEDownloader:
             'nifty50': os.path.join(nse_base_path, "NIFTY50"),
             'nifty500': os.path.join(nse_base_path, "NIFTY500"),
             'market_indices': os.path.join(nse_base_path, "Market_Indices"),
+            'option_chain': os.path.join(nse_base_path, "Option_Chain"),
             'oi_spurts': eod_base_path,
-            'option_chain': eod_base_path,
             'combine_oi': eod_base_path,
             'pe_detail': eod_base_path,
             'cm_high_low': eod_base_path,
@@ -679,6 +679,27 @@ class NSEDownloader:
                     progress_offset=75,
                     progress_bar='main'
                 )
+
+            success_option_chain = False
+            if mode in ['all', 'defaults']:
+                logging.info("=" * 50)
+                logging.info("DIRECT DOWNLOAD: OPTION CHAIN")
+                logging.info("=" * 50)
+
+                if self.gui:
+                    self.gui.update_progress(75, "Preparing Option Chain download...", bar="main")
+
+                option_chain_url = self.urls['option_chain']
+                print(f"Downloading Option Chain from: {option_chain_url}")
+                success_option_chain = self.download_browser_click_file(
+                    driver,
+                    'option_chain',
+                    option_chain_url,
+                    self.download_paths['option_chain'],
+                    'download_csv',
+                    progress_offset=80,
+                    progress_bar='main'
+                )
             
             # Process direct downloads
             direct_download_results = {}
@@ -700,25 +721,14 @@ class NSEDownloader:
                         # Format URL with target date
                         formatted_url = self.get_formatted_url(url, self.target_date)
                         print(f"Downloading {key} from: {formatted_url}")
-                        if key == 'option_chain':
-                            success = self.download_browser_click_file(
-                                driver,
-                                key,
-                                formatted_url,
-                                self.download_paths[key],
-                                'download_csv',
-                                progress_offset=progress,
-                                progress_bar='optional'
-                            )
-                        else:
-                            success = self.download_direct_file(
-                                driver,
-                                key,
-                                formatted_url,
-                                self.download_paths[key],
-                                progress_offset=progress,
-                                progress_bar='optional'
-                            )
+                        success = self.download_direct_file(
+                            driver,
+                            key,
+                            formatted_url,
+                            self.download_paths[key],
+                            progress_offset=progress,
+                            progress_bar='optional'
+                        )
                         direct_download_results[key] = success
                         time.sleep(0.5)  # Smaller delay between downloads
             
@@ -741,6 +751,8 @@ class NSEDownloader:
                     success_msg.append("NIFTY 500")
                 if success_market:
                     success_msg.append("Market Indices")
+                if success_option_chain:
+                    success_msg.append("Option Chain")
                     
                 if success_msg:
                     msg = f"Successfully downloaded: {', '.join(success_msg)}"
@@ -1296,7 +1308,7 @@ class DownloaderGUI:
         default_frame = ctk.CTkFrame(select_frame, fg_color="transparent")
         default_frame.pack(fill=tk.X, padx=10, pady=(0, 5))
         ctk.CTkLabel(default_frame, text="Default (Always Downloaded):", font=("Helvetica", 12, "bold")).pack(anchor=tk.W)
-        ctk.CTkLabel(default_frame, text="• NIFTY 50, NIFTY 500, Market Indices", text_color="gray").pack(anchor=tk.W, padx=15)
+        ctk.CTkLabel(select_frame, text="• NIFTY 50, NIFTY 500, Market Indices, Option Chain", font=("Helvetica", 12)).pack(anchor=tk.W, padx=10, pady=2)
         
         # Optional downloads
         opt_header_frame = ctk.CTkFrame(select_frame, fg_color="transparent")
@@ -1424,7 +1436,7 @@ class DownloaderGUI:
         prog_inner.pack(fill=tk.X, padx=10, pady=5)
         
         # Default Progress
-        ctk.CTkLabel(prog_inner, text="Default (NIFTY 50, NIFTY 500 & Indices):", font=("Helvetica", 12, "bold")).pack(anchor=tk.W)
+        ctk.CTkLabel(prog_inner, text="Default (NIFTY 50, 500, Indices & Option Chain):", font=("Helvetica", 12, "bold")).pack(anchor=tk.W)
         self.progress_bar = ctk.CTkProgressBar(
             prog_inner,
             height=12,
@@ -1477,7 +1489,7 @@ class DownloaderGUI:
         ctk.CTkLabel(path_inner_frame, text="Source:", width=60).pack(side=tk.LEFT, padx=(0,10))
         
         # Get all source keys
-        all_source_keys = ['nifty50', 'nifty500', 'market_indices', 'eod_all'] + list(self.downloader.direct_urls.keys())
+        all_source_keys = ['nifty50', 'nifty500', 'market_indices', 'option_chain', 'eod_all'] + list(self.downloader.direct_urls.keys())
         all_source_names = {k: k.replace('_', ' ').title() for k in all_source_keys}
         all_source_names['nifty50'] = "NIFTY 50"
         all_source_names['nifty500'] = "NIFTY 500"

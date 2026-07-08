@@ -1478,59 +1478,43 @@ class DownloaderGUI:
         settings_container = ctk.CTkFrame(self.settings_tab, fg_color="transparent")
         settings_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
-        # File Types Section
-        file_frame = ctk.CTkFrame(settings_container)
-        file_frame.pack(fill=tk.X, pady=5)
-        ctk.CTkLabel(file_frame, text="Conversion Settings", font=("Helvetica", 14, "bold")).pack(anchor=tk.W, padx=10, pady=(5,0))
+        path_frame = ctk.CTkFrame(settings_container)
+        path_frame.pack(fill=tk.X, pady=5)
+        ctk.CTkLabel(path_frame, text="Download Locations", font=("Helvetica", 14, "bold")).pack(anchor=tk.W, padx=10, pady=(5,0))
         
-        file_inner = ctk.CTkFrame(file_frame, fg_color="transparent")
-        file_inner.pack(fill=tk.X, padx=10, pady=10)
+        # Source Selection
+        path_inner_frame = ctk.CTkFrame(path_frame, fg_color="transparent")
+        path_inner_frame.pack(fill=tk.X, padx=10, pady=10)
         
-        self.convert_excel_var = tk.BooleanVar(value=self.downloader.convert_to_excel)
-        self.excel_check = ctk.CTkCheckBox(
-            file_inner,
-            text="Convert ALL downloaded CSV files to Excel (.xlsx)",
-            variable=self.convert_excel_var,
-            command=self.save_settings
-        )
-        self.excel_check.pack(anchor=tk.W, pady=5)
+        ctk.CTkLabel(path_inner_frame, text="Source:", width=60).pack(side=tk.LEFT, padx=(0,10))
         
-        ctk.CTkLabel(file_inner, text="Note: Converting to Excel requires 'pandas' and 'openpyxl'. Falls back to CSV if they fail.", font=("Helvetica", 11), text_color="gray").pack(anchor=tk.W)
+        # Get all source keys
+        all_source_keys = ['nifty50', 'nifty500', 'market_indices', 'eod_all'] + list(self.downloader.direct_urls.keys())
+        all_source_names = {k: k.replace('_', ' ').title() for k in all_source_keys}
+        all_source_names['nifty50'] = "NIFTY 50"
+        all_source_names['nifty500'] = "NIFTY 500"
+        all_source_names['market_indices'] = "Market Indices"
+        all_source_names['eod_all'] = "EOD Data (All Optional Files)"
+        all_source_names['cm_high_low'] = "CM 52wk HighLow"
+        all_source_names['corporates_pit'] = "Corporates PIT"
         
-        # Advanced Section
-        adv_frame = ctk.CTkFrame(settings_container)
-        adv_frame.pack(fill=tk.X, pady=15)
-        ctk.CTkLabel(adv_frame, text="Advanced Logging", font=("Helvetica", 14, "bold")).pack(anchor=tk.W, padx=10, pady=(5,0))
+        self.name_to_key = {v: k for k, v in all_source_names.items()}
         
-        adv_inner = ctk.CTkFrame(adv_frame, fg_color="transparent")
-        adv_inner.pack(fill=tk.X, padx=10, pady=10)
+        self.source_var = tk.StringVar(value=all_source_names['nifty500'])
+        self.source_cb = ctk.CTkComboBox(path_inner_frame, variable=self.source_var, 
+                                     values=list(all_source_names.values()), width=350, command=self.on_source_change)
+        self.source_cb.pack(side=tk.LEFT, padx=5)
         
-        self.log_btn = ctk.CTkButton(
-            adv_inner,
-            text="Open Log Folder",
-            command=self.open_log_folder,
-            width=150, corner_radius=50, fg_color="transparent", border_width=1, text_color=("black", "white")
-        )
-        self.log_btn.pack(anchor=tk.W, pady=5)
+        # Path Entry
+        path_entry_frame = ctk.CTkFrame(path_frame, fg_color="transparent")
+        path_entry_frame.pack(fill=tk.X, padx=10, pady=(0, 10))
         
-        ctk.CTkLabel(adv_inner, text=f"Logs are saved to: {os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logs')}", font=("Helvetica", 11), text_color="gray").pack(anchor=tk.W)
-
-    def save_settings(self):
-        self.downloader.convert_to_excel = self.convert_excel_var.get()
-        self.downloader.save_config()
-        self.update_progress(0, "Settings saved successfully", bar="main")
-
-    def open_log_folder(self):
-        log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")
-        if not os.path.exists(log_dir):
-            os.makedirs(log_dir)
-        import subprocess
-        if sys.platform == "win32":
-            os.startfile(log_dir)
-        elif sys.platform == "darwin":
-            subprocess.Popen(["open", log_dir])
-        else:
-            subprocess.Popen(["xdg-open", log_dir])
+        ctk.CTkLabel(path_entry_frame, text="Path:", width=60).pack(side=tk.LEFT, padx=(0,10))
+        self.download_path_var = tk.StringVar(value=self.downloader.download_paths.get('nifty500', ''))
+        self.path_entry = ctk.CTkEntry(path_entry_frame, textvariable=self.download_path_var, width=400)
+        self.path_entry.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
+        
+        ctk.CTkButton(path_entry_frame, text="Browse", command=self.browse_current_folder, width=100, corner_radius=50).pack(side=tk.LEFT, padx=10)
 
     def set_today(self):
         now = datetime.now()
@@ -1556,9 +1540,9 @@ class DownloaderGUI:
             var.set(False)
         self.on_checkbox_toggle()
         
-    def on_source_change(self, event):
+    def on_source_change(self, event=None):
         source = self.source_var.get()
-        source_key = next((k for k, v in self.source_names.items() if v == source), None)
+        source_key = self.name_to_key.get(source)
         if source_key:
             self.download_path_var.set(self.downloader.download_paths.get(source_key, ""))
             
@@ -1567,7 +1551,7 @@ class DownloaderGUI:
         if folder:
             self.download_path_var.set(folder)
             source = self.source_var.get()
-            source_key = next((k for k, v in self.source_names.items() if v == source), None)
+            source_key = self.name_to_key.get(source)
             if source_key:
                 self.downloader.download_paths[source_key] = folder
                 self.downloader.save_config()

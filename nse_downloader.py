@@ -24,6 +24,7 @@ class NSEDownloader:
     def __init__(self, gui=None):
         # URLs for both websites
         self.urls = {
+            'nifty50': "https://www.nseindia.com/api/equity-stock-indices?csv=true&index=NIFTY%2050&selectValFormat=crores",
             'nifty500': " https://www.nseindia.com/api/equity-stock-indices?csv=true&index=NIFTY%20500&selectValFormat=crores",
            
             'market_indices': "https://www.nseindia.com/api/allIndices?csv=true"
@@ -62,6 +63,7 @@ class NSEDownloader:
         eod_base_path = os.path.join(os.path.expanduser("~"), "Downloads", "EOD_Data")
         
         self.download_paths = {
+            'nifty50': os.path.join(nse_base_path, "NIFTY50"),
             'nifty500': os.path.join(nse_base_path, "NIFTY500"),
             'market_indices': os.path.join(nse_base_path, "Market_Indices"),
             'oi_spurts': eod_base_path,
@@ -616,6 +618,26 @@ class NSEDownloader:
             driver.get("https://www.nseindia.com/market-data/live-index-watch")
             time.sleep(3)
             
+            success_nifty50 = False
+            if mode in ['all', 'defaults']:
+                logging.info("=" * 50)
+                logging.info("DIRECT DOWNLOAD: NIFTY 50")
+                logging.info("=" * 50)
+
+                if self.gui:
+                    self.gui.update_progress(20, "Preparing NIFTY 50 download...", bar="main")
+
+                nifty50_url = self.urls['nifty50']
+                print(f"Downloading NIFTY 50 from: {nifty50_url}")
+                success_nifty50 = self.download_direct_file(
+                    driver,
+                    'nifty50',
+                    nifty50_url,
+                    self.download_paths['nifty50'],
+                    progress_offset=25,
+                    progress_bar='main'
+                )
+
             success_nifty500 = False
             if mode in ['all', 'defaults']:
                 logging.info("=" * 50)
@@ -710,10 +732,35 @@ class NSEDownloader:
             failed_downloads = []
             
             if mode in ['all', 'defaults']:
+                success_msg = []
+                if success_nifty50:
+                    success_msg.append("NIFTY 50")
+                if success_nifty500:
+                    success_msg.append("NIFTY 500")
+                if success_market:
+                    success_msg.append("Market Indices")
+                    
+                if success_msg:
+                    msg = f"Successfully downloaded: {', '.join(success_msg)}"
+                    logging.info(msg)
+                    if self.gui:
+                        self.gui.update_progress(100, "Defaults completed!", bar="main")
+                else:
+                    if self.gui:
+                        self.gui.update_progress(100, "Defaults completed (with errors)", bar="main")
+
+                if success_nifty50:
+                    preferred_file = success_nifty50 if isinstance(success_nifty50, str) else None
+                    renamed = self.rename_downloaded_file('nifty50', self.download_paths['nifty50'], skip_stability_check=True, progress_start=76, progress_end=84, progress_bar="main", download_start_time=download_start_time, preferred_file=preferred_file)
+                    if renamed:
+                        renamed_files.append(renamed)
+                    else:
+                        failed_downloads.append("NIFTY 50")
+                
                 if success_nifty500:
                     # Update progress: Processing NIFTY 500 file
                     preferred_file = success_nifty500 if isinstance(success_nifty500, str) else None
-                    renamed = self.rename_downloaded_file('nifty500', self.download_paths['nifty500'], skip_stability_check=True, progress_start=76, progress_end=88, progress_bar="main", download_start_time=download_start_time, preferred_file=preferred_file)
+                    renamed = self.rename_downloaded_file('nifty500', self.download_paths['nifty500'], skip_stability_check=True, progress_start=84, progress_end=92, progress_bar="main", download_start_time=download_start_time, preferred_file=preferred_file)
                     if renamed:
                         renamed_files.append(renamed)
                     else:
@@ -1159,50 +1206,11 @@ class DownloaderGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("NSE Data Downloader")
-        self.root.geometry("1024x768")  # Compact HD
-        self.root.configure(bg="#f5f5f7")
+        self.root.geometry("1100x800")
         
-        # Apply Apple-inspired aesthetic
-        style = ttk.Style()
-        style.theme_use('clam')
-        style.configure(".", background="#f5f5f7", foreground="#1d1d1f", font=("Helvetica", 11))
-        style.configure("TFrame", background="#f5f5f7")
-        style.configure("TLabel", background="#f5f5f7", foreground="#1d1d1f")
-        style.configure("TCheckbutton", background="#f5f5f7", foreground="#1d1d1f", focuscolor="none", padding=(0, 2))
-        style.configure("TRadiobutton", background="#f5f5f7", foreground="#1d1d1f")
-        
-        # Hide native Checkbutton indicator in clam theme so we can use custom text ticks
-        style.layout('TCheckbutton', [
-            ('Checkbutton.padding', {'sticky': 'nswe', 'children': [
-                ('Checkbutton.focus', {'side': 'left', 'sticky': 'w', 'children': [
-                    ('Checkbutton.label', {'sticky': 'nswe'})
-                ]})
-            ]})
-        ])
-        
-        # Pill-like CTAs
-        style.configure("TButton", 
-                        background="#0066cc", 
-                        foreground="#ffffff", 
-                        borderwidth=0, 
-                        focusthickness=0, 
-                        focuscolor="none",
-                        padding=(20, 10),
-                        font=("Helvetica", 11, "bold"))
-        style.map("TButton", 
-                  background=[('active', '#0071e3'), ('disabled', '#d2d2d7')],
-                  foreground=[('disabled', '#7a7a7a')])
-                  
-        # LabelFrames without borders
-        style.configure("TLabelframe", background="#f5f5f7", borderwidth=0, relief="flat")
-        style.configure("TLabelframe.Label", background="#f5f5f7", font=("Helvetica", 12, "bold"))
-
-        # Increase Tk scaling slightly to render crisp UI on HD screens
-        try:
-            self.root.tk.call('tk', 'scaling', 1.25)
-        except Exception:
-            pass
-        self.root.resizable(True, True)  # Allow resizing
+        # Configure CTk appearance
+        ctk.set_appearance_mode("System")
+        ctk.set_default_color_theme("blue")
         
         self.downloader = NSEDownloader(gui=self)
         self.scheduler_thread = None
@@ -1216,93 +1224,89 @@ class DownloaderGUI:
         # Auto-start scheduler if auto mode is enabled and time is between 8 AM and 8 PM
         if self.downloader.auto_mode:
             self.check_and_start_auto_mode()
-    
+            
     def create_widgets(self):
         # Title - Apple tight headline
-        title_label = tk.Label(
+        title_label = ctk.CTkLabel(
             self.root,
             text="NSE Data Downloader",
-            font=("Helvetica", 24, "bold"),
-            bg="#f5f5f7",
-            fg="#1d1d1f",
-            pady=20
+            font=("Helvetica", 24, "bold")
         )
-        title_label.pack()
+        title_label.pack(pady=20)
         
         # Main frame
-        main_frame = ttk.Frame(self.root, padding="20")
-        main_frame.pack(fill=tk.BOTH, expand=True)
+        main_frame = ctk.CTkFrame(self.root, fg_color="transparent")
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
         
         # Create Notebook (Tabs)
-        self.notebook = ttk.Notebook(main_frame)
-        self.notebook.pack(fill=tk.X, expand=False, pady=2)
+        self.notebook = ctk.CTkTabview(main_frame)
+        self.notebook.pack(fill=tk.BOTH, expand=True)
         
         # Create Tabs
-        self.dashboard_tab = ttk.Frame(self.notebook, padding=2)
-        self.settings_tab = ttk.Frame(self.notebook, padding=2)
-        
-        self.notebook.add(self.dashboard_tab, text="Dashboard")
-        self.notebook.add(self.settings_tab, text="Settings")
+        self.dashboard_tab = self.notebook.add("Dashboard")
+        self.settings_tab = self.notebook.add("Settings")
         
         # --- DASHBOARD TAB ---
         
         # Date Selection Section
-        date_frame = ttk.LabelFrame(self.dashboard_tab, text="Select Date", padding="2")
-        date_frame.pack(fill=tk.X, pady=1)
+        date_frame = ctk.CTkFrame(self.dashboard_tab)
+        date_frame.pack(fill=tk.X, pady=5, padx=5)
+        ctk.CTkLabel(date_frame, text="Select Date", font=("Helvetica", 14, "bold")).pack(anchor=tk.W, padx=10, pady=(5,0))
         
         # Date Picker (Day, Month, Year)
-        date_inner_frame = ttk.Frame(date_frame)
-        date_inner_frame.pack(fill=tk.X)
+        date_inner_frame = ctk.CTkFrame(date_frame, fg_color="transparent")
+        date_inner_frame.pack(fill=tk.X, padx=10, pady=10)
         
-        ttk.Label(date_inner_frame, text="Date:").pack(side=tk.LEFT, padx=2)
+        ctk.CTkLabel(date_inner_frame, text="Date:").pack(side=tk.LEFT, padx=(0,10))
         
         # Day
         self.day_var = tk.StringVar(value=datetime.now().strftime("%d"))
         days = [f"{i:02d}" for i in range(1, 32)]
-        self.day_cb = ttk.Combobox(date_inner_frame, textvariable=self.day_var, values=days, width=3, state="readonly")
-        self.day_cb.pack(side=tk.LEFT, padx=1)
+        self.day_cb = ctk.CTkComboBox(date_inner_frame, variable=self.day_var, values=days, width=70)
+        self.day_cb.pack(side=tk.LEFT, padx=5)
         
         # Month
         self.month_var = tk.StringVar(value=datetime.now().strftime("%B"))
         months = ["January", "February", "March", "April", "May", "June", 
                   "July", "August", "September", "October", "November", "December"]
-        self.month_cb = ttk.Combobox(date_inner_frame, textvariable=self.month_var, values=months, width=10, state="readonly")
-        self.month_cb.pack(side=tk.LEFT, padx=1)
+        self.month_cb = ctk.CTkComboBox(date_inner_frame, variable=self.month_var, values=months, width=120)
+        self.month_cb.pack(side=tk.LEFT, padx=5)
         
         # Year
         current_year = int(datetime.now().strftime("%Y"))
         self.year_var = tk.StringVar(value=str(current_year))
         years = [str(y) for y in range(current_year - 5, 2100)]
-        self.year_cb = ttk.Combobox(date_inner_frame, textvariable=self.year_var, values=years, width=5, state="readonly")
-        self.year_cb.pack(side=tk.LEFT, padx=1)
+        self.year_cb = ctk.CTkComboBox(date_inner_frame, variable=self.year_var, values=years, width=80)
+        self.year_cb.pack(side=tk.LEFT, padx=5)
         
-        ttk.Button(date_inner_frame, text="Set Today", command=self.set_today).pack(side=tk.LEFT, padx=5)
+        ctk.CTkButton(date_inner_frame, text="Set Today", command=self.set_today, width=100, corner_radius=50).pack(side=tk.LEFT, padx=20)
 
         # Download Selection Section
-        select_frame = ttk.LabelFrame(self.dashboard_tab, text="Select Downloads", padding="2")
-        select_frame.pack(fill=tk.X, pady=1)
+        select_frame = ctk.CTkFrame(self.dashboard_tab)
+        select_frame.pack(fill=tk.X, pady=5, padx=5)
+        
+        ctk.CTkLabel(select_frame, text="Select Downloads", font=("Helvetica", 14, "bold")).pack(anchor=tk.W, padx=10, pady=(5,0))
         
         # Default downloads (Always selected)
-        default_frame = ttk.Frame(select_frame)
-        default_frame.pack(fill=tk.X, pady=(0, 1))
-        ttk.Label(default_frame, text="Default (Always Downloaded):", font=("Arial", 9, "bold")).pack(anchor=tk.W)
-        ttk.Label(default_frame, text="• NIFTY 500, Market Indices", foreground="#555555").pack(anchor=tk.W, padx=5)
+        default_frame = ctk.CTkFrame(select_frame, fg_color="transparent")
+        default_frame.pack(fill=tk.X, padx=10, pady=(0, 5))
+        ctk.CTkLabel(default_frame, text="Default (Always Downloaded):", font=("Helvetica", 12, "bold")).pack(anchor=tk.W)
+        ctk.CTkLabel(default_frame, text="• NIFTY 50, NIFTY 500, Market Indices", text_color="gray").pack(anchor=tk.W, padx=15)
         
         # Optional downloads
-        opt_header_frame = ttk.Frame(select_frame)
-        opt_header_frame.pack(fill=tk.X, pady=(1, 0))
-        ttk.Label(opt_header_frame, text="Optional Downloads:", font=("Arial", 9, "bold")).pack(side=tk.LEFT)
+        opt_header_frame = ctk.CTkFrame(select_frame, fg_color="transparent")
+        opt_header_frame.pack(fill=tk.X, padx=10, pady=5)
+        ctk.CTkLabel(opt_header_frame, text="Optional Downloads:", font=("Helvetica", 12, "bold")).pack(side=tk.LEFT)
         
         # Helper buttons
-        ttk.Button(opt_header_frame, text="Clear All", command=self.deselect_all, width=8).pack(side=tk.RIGHT)
-        ttk.Button(opt_header_frame, text="Select All", command=self.select_all, width=8).pack(side=tk.RIGHT, padx=2)
-        ttk.Button(opt_header_frame, text="Download Selected", command=self.download_optionals, width=16).pack(side=tk.RIGHT, padx=2)
+        ctk.CTkButton(opt_header_frame, text="Clear All", command=self.deselect_all, width=100, corner_radius=50, fg_color="transparent", border_width=1, text_color=("black", "white")).pack(side=tk.RIGHT)
+        ctk.CTkButton(opt_header_frame, text="Select All", command=self.select_all, width=100, corner_radius=50, fg_color="transparent", border_width=1, text_color=("black", "white")).pack(side=tk.RIGHT, padx=5)
+        ctk.CTkButton(opt_header_frame, text="Download Selected", command=self.download_optionals, width=150, corner_radius=50).pack(side=tk.RIGHT, padx=5)
         
-        # Frame for checkboxes (Grid layout)
-        checkbox_frame = ttk.Frame(select_frame)
-        checkbox_frame.pack(fill=tk.X, pady=1)
+        # Frame for checkboxes
+        checkbox_frame = ctk.CTkFrame(select_frame, fg_color="transparent")
+        checkbox_frame.pack(fill=tk.X, padx=10, pady=5)
         
-        # Add checkboxes for direct URLs only
         self.source_names = {}
         for k in self.downloader.direct_urls.keys():
             if k == 'cm_high_low':
@@ -1314,7 +1318,6 @@ class DownloaderGUI:
             else:
                 self.source_names[k] = k.replace('_', ' ').title()
         
-        # Use grid layout for checkboxes (3 columns)
         row = 0
         col = 0
         self.checkbox_widgets = {}
@@ -1322,14 +1325,13 @@ class DownloaderGUI:
             is_checked = key in self.downloader.enabled_downloads
             var = tk.BooleanVar(value=is_checked)
             self.selected_downloads[key] = var
-            tick_char = "✔" if is_checked else "☐"
-            cb = ttk.Checkbutton(
+            cb = ctk.CTkCheckBox(
                 checkbox_frame, 
-                text=f"{tick_char} {name}", 
+                text=name, 
                 variable=var, 
                 command=lambda k=key: self.on_checkbox_toggle(k)
             )
-            cb.grid(row=row, column=col, sticky=tk.W, padx=10, pady=5)
+            cb.grid(row=row, column=col, sticky=tk.W, padx=20, pady=10)
             self.checkbox_widgets[key] = cb
             
             col += 1
@@ -1337,11 +1339,11 @@ class DownloaderGUI:
                 col = 0
                 row += 1
 
-        # Optional Progress Bar (Inside Select Frame)
-        opt_prog_frame = ttk.Frame(select_frame)
-        opt_prog_frame.pack(fill=tk.X, pady=(5, 1), padx=2)
+        # Optional Progress Bar
+        opt_prog_frame = ctk.CTkFrame(select_frame, fg_color="transparent")
+        opt_prog_frame.pack(fill=tk.X, padx=10, pady=10)
         
-        ttk.Label(opt_prog_frame, text="Optional Progress:", font=("Arial", 8, "bold")).pack(anchor=tk.W)
+        ctk.CTkLabel(opt_prog_frame, text="Optional Progress:", font=("Helvetica", 12, "bold")).pack(anchor=tk.W)
         
         self.opt_progress_bar = ctk.CTkProgressBar(
             opt_prog_frame,
@@ -1350,507 +1352,368 @@ class DownloaderGUI:
             height=12
         )
         self.opt_progress_bar.set(0)
-        self.opt_progress_bar.pack(fill=tk.X, pady=1)
+        self.opt_progress_bar.pack(fill=tk.X, pady=5)
         
-        self.opt_progress_label = ttk.Label(
+        self.opt_progress_label = ctk.CTkLabel(
             opt_prog_frame, 
             text="Ready", 
-            font=("Arial", 8),
-            foreground="#000000"
+            font=("Helvetica", 12)
         )
         self.opt_progress_label.pack(anchor=tk.W)
 
-        self.opt_schedule_label = ttk.Label(
+        self.opt_schedule_label = ctk.CTkLabel(
             opt_prog_frame,
             text=f"Auto-download runs daily at {self.downloader.optional_download_time}",
-            font=("Arial", 7),
-            foreground="#555555"
+            font=("Helvetica", 11),
+            text_color="gray"
         )
-        self.opt_schedule_label.pack(anchor=tk.W, pady=(0, 2))
+        self.opt_schedule_label.pack(anchor=tk.W)
 
-        # Time Schedule Section - compact
-        time_frame = ttk.LabelFrame(self.dashboard_tab, text="Schedule Times", padding="2")
-        time_frame.pack(fill=tk.X, pady=1)
+        # Time Schedule Section
+        time_frame = ctk.CTkFrame(self.dashboard_tab)
+        time_frame.pack(fill=tk.X, pady=5, padx=5)
+        
+        ctk.CTkLabel(time_frame, text="Schedule Times", font=("Helvetica", 14, "bold")).pack(anchor=tk.W, padx=10, pady=(5,0))
+        
+        time_inner_frame = ctk.CTkFrame(time_frame, fg_color="transparent")
+        time_inner_frame.pack(fill=tk.X, padx=10, pady=5)
         
         # Auto Mode Checkbox
         self.auto_mode_var = tk.BooleanVar(value=self.downloader.auto_mode)
-        is_auto = self.auto_mode_var.get()
-        self.auto_mode_check = ttk.Checkbutton(
-            time_frame,
-            text=f"{'✔' if is_auto else '☐'} Auto Mode (8 AM - 8 PM, auto-start scheduler)",
+        self.auto_mode_check = ctk.CTkCheckBox(
+            time_inner_frame,
+            text="Auto Mode (8 AM - 8 PM, auto-start scheduler)",
             variable=self.auto_mode_var,
             command=self.toggle_auto_mode
         )
-        self.auto_mode_check.pack(anchor=tk.W, padx=3, pady=1)
+        self.auto_mode_check.pack(anchor=tk.W, pady=5)
         
         # Weekend Downloads Checkbox
-        is_weekend = self.weekend_downloads_var.get()
-        self.weekend_check = ttk.Checkbutton(
-            time_frame,
-            text=f"{'✔' if is_weekend else '☐'} Enable Weekend Downloads (Saturday & Sunday)",
+        self.weekend_check = ctk.CTkCheckBox(
+            time_inner_frame,
+            text="Enable Weekend Downloads (Saturday & Sunday)",
             variable=self.weekend_downloads_var,
             command=self.toggle_weekend_downloads
         )
-        self.weekend_check.pack(anchor=tk.W, padx=3, pady=1)
+        self.weekend_check.pack(anchor=tk.W, pady=5)
         
-        ttk.Label(time_frame, text="Times (HH:MM, 24-hour, comma separated):", font=("Arial", 8)).pack(anchor=tk.W, padx=3, pady=1)
+        ctk.CTkLabel(time_inner_frame, text="Times (HH:MM, 24-hour, comma separated):", font=("Helvetica", 12)).pack(anchor=tk.W, pady=(10,0))
         
-        # Display current times
         self.time_var = tk.StringVar(value=", ".join(self.downloader.scheduled_times))
-        time_entry = ttk.Entry(time_frame, textvariable=self.time_var, width=40)
-        time_entry.pack(padx=3, pady=1, fill=tk.X)
+        time_entry = ctk.CTkEntry(time_inner_frame, textvariable=self.time_var, width=400)
+        time_entry.pack(anchor=tk.W, pady=5)
         
-        ttk.Label(time_frame, text="Example: 09:30, 12:00, 15:30", font=("Arial", 7), foreground="gray").pack(anchor=tk.W, padx=3)
+        ctk.CTkLabel(time_inner_frame, text="Example: 09:30, 12:00, 15:30", font=("Helvetica", 11), text_color="gray").pack(anchor=tk.W)
 
-        # Control Buttons - compact
-        button_frame = ttk.Frame(self.dashboard_tab)
-        button_frame.pack(pady=3)
+        # Control Buttons
+        button_frame = ctk.CTkFrame(self.dashboard_tab, fg_color="transparent")
+        button_frame.pack(pady=15)
         
         self.start_btn = ctk.CTkButton(
             button_frame,
             text="Start Scheduler",
             command=self.start_scheduler,
-            width=140, height=36, corner_radius=50,
-            fg_color="#0066cc", hover_color="#0071e3", text_color="white",
-            font=("Helvetica", 12, "bold")
+            width=140, height=40, corner_radius=50,
+            font=("Helvetica", 13, "bold")
         )
-        self.start_btn.pack(side=tk.LEFT, padx=4)
+        self.start_btn.pack(side=tk.LEFT, padx=10)
         
         self.stop_btn = ctk.CTkButton(
             button_frame,
             text="Stop Scheduler",
             command=self.stop_scheduler,
             state="disabled",
-            width=140, height=36, corner_radius=50,
-            fg_color="#0066cc", hover_color="#0071e3", text_color="white",
-            font=("Helvetica", 12, "bold")
+            width=140, height=40, corner_radius=50,
+            font=("Helvetica", 13, "bold")
         )
-        self.stop_btn.pack(side=tk.LEFT, padx=4)
+        self.stop_btn.pack(side=tk.LEFT, padx=10)
         
-        # Manual Download Button
         self.manual_btn = ctk.CTkButton(
             button_frame,
             text="Download Now",
             command=self.manual_download,
-            width=160, height=36, corner_radius=50,
-            fg_color="#0066cc", hover_color="#0071e3", text_color="white",
-            font=("Helvetica", 12, "bold")
+            width=160, height=40, corner_radius=50,
+            font=("Helvetica", 13, "bold")
         )
-        self.manual_btn.pack(side=tk.LEFT, padx=4)
+        self.manual_btn.pack(side=tk.LEFT, padx=10)
         
-        # Progress Bar Section - compact
-        progress_frame = ttk.LabelFrame(self.dashboard_tab, text="Main Progress", padding="2")
-        progress_frame.pack(fill=tk.X, pady=1)
+        # Progress Bar Section
+        progress_frame = ctk.CTkFrame(self.dashboard_tab)
+        progress_frame.pack(fill=tk.X, pady=5, padx=5)
         
-        # Main Progress (NIFTY 500 & Indices)
-        ttk.Label(progress_frame, text="Main (NIFTY 500 & Indices):", font=("Arial", 8, "bold")).pack(anchor=tk.W, padx=2)
+        ctk.CTkLabel(progress_frame, text="Main Progress", font=("Helvetica", 14, "bold")).pack(anchor=tk.W, padx=10, pady=(5,0))
+        
+        prog_inner = ctk.CTkFrame(progress_frame, fg_color="transparent")
+        prog_inner.pack(fill=tk.X, padx=10, pady=5)
+        
+        ctk.CTkLabel(prog_inner, text="Main (NIFTY 50, NIFTY 500 & Indices):", font=("Helvetica", 12, "bold")).pack(anchor=tk.W)
         self.progress_bar = ctk.CTkProgressBar(
-            progress_frame,
-            width=520, height=16,
+            prog_inner,
+            height=16,
             corner_radius=50,
             progress_color="#28a745" # Green
         )
         self.progress_bar.set(0)
-        self.progress_bar.pack(pady=1, fill=tk.X, padx=2)
+        self.progress_bar.pack(pady=5, fill=tk.X)
         
-        self.progress_label = ttk.Label(
-            progress_frame, 
+        self.progress_label = ctk.CTkLabel(
+            prog_inner, 
             text="Ready", 
-            font=("Arial", 8),
-            foreground="#000000"
+            font=("Helvetica", 12)
         )
-        self.progress_label.pack(pady=(0, 2), anchor=tk.W, padx=2)
+        self.progress_label.pack(anchor=tk.W)
         
-        # Info Label - shorter text to avoid cutoff
-        info_label = ttk.Label(
+        info_label = ctk.CTkLabel(
             self.dashboard_tab,
-            text="Keep window open for scheduled downloads (Mon-Fri only)",
-            font=("Arial", 8, "italic"),
-            foreground="#555555"
+            text="Downloaded files will be organized into folders by date inside your Downloads directory.",
+            font=("Helvetica", 11),
+            text_color="gray"
         )
-        info_label.pack(pady=2)
-
+        info_label.pack(pady=10)
+        
         # --- SETTINGS TAB ---
+        self.create_settings_widgets()
 
-        # Download Path Section - Dynamic Source Selection
-        path_frame = ttk.LabelFrame(self.settings_tab, text="Download Locations", padding="2")
-        path_frame.pack(fill=tk.X, pady=5)
+    def create_settings_widgets(self):
+        settings_container = ctk.CTkFrame(self.settings_tab, fg_color="transparent")
+        settings_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
-        # Source Selection
-        path_inner_frame = ttk.Frame(path_frame)
-        path_inner_frame.pack(fill=tk.X, pady=1)
+        # File Types Section
+        file_frame = ctk.CTkFrame(settings_container)
+        file_frame.pack(fill=tk.X, pady=5)
+        ctk.CTkLabel(file_frame, text="Conversion Settings", font=("Helvetica", 14, "bold")).pack(anchor=tk.W, padx=10, pady=(5,0))
         
-        ttk.Label(path_inner_frame, text="Source:", width=10).pack(side=tk.LEFT, padx=2)
+        file_inner = ctk.CTkFrame(file_frame, fg_color="transparent")
+        file_inner.pack(fill=tk.X, padx=10, pady=10)
         
-        # Get all source keys
-        all_source_keys = ['nifty500', 'market_indices', 'eod_all'] + list(self.downloader.direct_urls.keys())
-        # Create readable names mapping
-        all_source_names = {k: k.replace('_', ' ').title() for k in all_source_keys}
-        all_source_names['nifty500'] = "NIFTY 500"
-        all_source_names['market_indices'] = "Market Indices"
-        all_source_names['eod_all'] = "EOD Data (All Optional Files)"
-        all_source_names['cm_high_low'] = "CM 52wk HighLow"
-        all_source_names['corporates_pit'] = "Corporates PIT"
+        self.convert_excel_var = tk.BooleanVar(value=self.downloader.convert_to_excel)
+        self.excel_check = ctk.CTkCheckBox(
+            file_inner,
+            text="Convert ALL downloaded CSV files to Excel (.xlsx)",
+            variable=self.convert_excel_var,
+            command=self.save_settings
+        )
+        self.excel_check.pack(anchor=tk.W, pady=5)
         
-        # Reverse mapping for lookup
-        self.name_to_key = {v: k for k, v in all_source_names.items()}
+        ctk.CTkLabel(file_inner, text="Note: Converting to Excel requires 'pandas' and 'openpyxl'. Falls back to CSV if they fail.", font=("Helvetica", 11), text_color="gray").pack(anchor=tk.W)
         
-        self.selected_source_name = tk.StringVar(value=all_source_names['nifty500'])
-        self.source_cb = ttk.Combobox(path_inner_frame, textvariable=self.selected_source_name, 
-                                     values=list(all_source_names.values()), width=30, state="readonly")
-        self.source_cb.pack(side=tk.LEFT, padx=2)
-        self.source_cb.bind("<<ComboboxSelected>>", self.on_source_change)
+        # Advanced Section
+        adv_frame = ctk.CTkFrame(settings_container)
+        adv_frame.pack(fill=tk.X, pady=15)
+        ctk.CTkLabel(adv_frame, text="Advanced Logging", font=("Helvetica", 14, "bold")).pack(anchor=tk.W, padx=10, pady=(5,0))
         
-        # Path Entry
-        path_entry_frame = ttk.Frame(path_frame)
-        path_entry_frame.pack(fill=tk.X, pady=1)
+        adv_inner = ctk.CTkFrame(adv_frame, fg_color="transparent")
+        adv_inner.pack(fill=tk.X, padx=10, pady=10)
         
-        ttk.Label(path_entry_frame, text="Path:", width=10).pack(side=tk.LEFT, padx=2)
-        self.current_path_var = tk.StringVar(value=self.downloader.download_paths['nifty500'])
-        self.path_entry = ttk.Entry(path_entry_frame, textvariable=self.current_path_var, width=45)
-        self.path_entry.pack(side=tk.LEFT, padx=2, fill=tk.X, expand=True)
+        self.log_btn = ctk.CTkButton(
+            adv_inner,
+            text="Open Log Folder",
+            command=self.open_log_folder,
+            width=150, corner_radius=50, fg_color="transparent", border_width=1, text_color=("black", "white")
+        )
+        self.log_btn.pack(anchor=tk.W, pady=5)
         
-        ttk.Button(path_entry_frame, text="Browse", command=self.browse_current_folder, width=8).pack(side=tk.LEFT, padx=2)
-        
+        ctk.CTkLabel(adv_inner, text=f"Logs are saved to: {os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logs')}", font=("Helvetica", 11), text_color="gray").pack(anchor=tk.W)
 
-    
+    def save_settings(self):
+        self.downloader.convert_to_excel = self.convert_excel_var.get()
+        self.downloader.save_config()
+        self.update_progress(0, "Settings saved successfully", bar="main")
+
+    def open_log_folder(self):
+        log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+        import subprocess
+        if sys.platform == "win32":
+            os.startfile(log_dir)
+        elif sys.platform == "darwin":
+            subprocess.Popen(["open", log_dir])
+        else:
+            subprocess.Popen(["xdg-open", log_dir])
+
     def set_today(self):
-        """Set date picker to today"""
         now = datetime.now()
         self.day_var.set(now.strftime("%d"))
         self.month_var.set(now.strftime("%B"))
         self.year_var.set(now.strftime("%Y"))
         
     def on_checkbox_toggle(self, changed_key=None):
-        """Save selected downloads state when a checkbox is clicked"""
-        if changed_key and hasattr(self, 'checkbox_widgets'):
-            is_checked = self.selected_downloads[changed_key].get()
-            tick_char = "✔" if is_checked else "☐"
-            self.checkbox_widgets[changed_key].config(text=f"{tick_char} {self.source_names[changed_key]}")
-            
-        self.downloader.enabled_downloads = [k for k, v in self.selected_downloads.items() if v.get()]
-        self.downloader.save_config()
-
-    def select_all(self):
-        """Select all optional downloads"""
-        for k, var in self.selected_downloads.items():
-            var.set(True)
-            self.on_checkbox_toggle(k)
-            
-    def deselect_all(self):
-        """Deselect all optional downloads"""
-        for k, var in self.selected_downloads.items():
-            var.set(False)
-            self.on_checkbox_toggle(k)
-        
-    def on_source_change(self, event):
-        """Update path entry when source changes"""
-        name = self.selected_source_name.get()
-        key = self.name_to_key.get(name)
-        if key == 'eod_all':
-            eod_paths = [self.downloader.download_paths.get(k, "") for k in self.downloader.eod_source_keys]
-            unique_paths = {p for p in eod_paths if p}
-            self.current_path_var.set(sorted(unique_paths)[0] if len(unique_paths) == 1 else "")
-        elif key:
-            path = self.downloader.download_paths.get(key, "")
-            self.current_path_var.set(path)
-            
-    def browse_current_folder(self):
-        """Browse folder for currently selected source"""
-        name = self.selected_source_name.get()
-        key = self.name_to_key.get(name)
-        if key:
-            folder = filedialog.askdirectory()
-            if folder:
-                self.current_path_var.set(folder)
-                if key == 'eod_all':
-                    for eod_key in self.downloader.eod_source_keys:
-                        self.downloader.download_paths[eod_key] = folder
-                else:
-                    self.downloader.download_paths[key] = folder
-                self.downloader.save_config()
-    
-    def get_selected_date(self):
-        """Get datetime object from date picker"""
-        try:
-            day = int(self.day_var.get())
-            month_name = self.month_var.get()
-            year = int(self.year_var.get())
-            
-            month_map = {
-                "January": 1, "February": 2, "March": 3, "April": 4, "May": 5, "June": 6,
-                "July": 7, "August": 8, "September": 9, "October": 10, "November": 11, "December": 12
-            }
-            month = month_map.get(month_name, 1)
-            
-            return datetime(year, month, day)
-        except Exception as e:
-            logging.error(f"Invalid date: {e}")
-            return datetime.now()
-
-    def manual_download(self):
-        """Start manual download of defaults (NIFTY 500 & Indices)"""
-        # Update target date from GUI (though defaults use current date)
-        self.downloader.target_date = self.get_selected_date()
-        
-        # Update scheduled times from input (persistence)
-        valid, result = self.validate_times(self.time_var.get())
-        if valid:
-            self.downloader.scheduled_times = result
-            self.downloader.save_config()
-            # Update display with normalized times
-            self.time_var.set(", ".join(result))
-            
-            # If scheduler is running, update the live schedule too
-            if self.downloader.is_running:
-                self.downloader.schedule_download()
-        
-        # Disable buttons
-        self.start_btn.configure(state="disabled")
-        self.stop_btn.configure(state="disabled")
-        if hasattr(self, 'manual_btn'):
-            self.manual_btn.configure(state="disabled")
-        
-        # Run download in thread (Defaults Only)
-        threading.Thread(target=self.run_download_thread, args=('defaults',)).start()
-
-    def download_optionals(self):
-        """Start manual download of selected optional files"""
-        # Update target date from GUI
-        selected_date = self.get_selected_date()
-        self.downloader.target_date = selected_date
-        
-        # Check if selected date is in the future
-        now = datetime.now()
-        # Compare dates only (strip time)
-        if selected_date.date() > now.date():
-            messagebox.showwarning(
-                "Future Date Selected", 
-                f"Cannot download files for {selected_date.strftime('%d-%b-%Y')}.\n\nData is not available for future dates."
-            )
-            return
-        
-        # Update selected downloads
-        self.downloader.enabled_downloads = []
+        enabled = []
         for key, var in self.selected_downloads.items():
             if var.get():
-                self.downloader.enabled_downloads.append(key)
-        
-        # Save config to remember selections
+                enabled.append(key)
+        self.downloader.enabled_downloads = enabled
         self.downloader.save_config()
         
-        if not self.downloader.enabled_downloads:
-            messagebox.showwarning("No Selection", "Please select at least one optional download.")
+    def select_all(self):
+        for key, var in self.selected_downloads.items():
+            var.set(True)
+        self.on_checkbox_toggle()
+        
+    def deselect_all(self):
+        for key, var in self.selected_downloads.items():
+            var.set(False)
+        self.on_checkbox_toggle()
+        
+    def on_source_change(self, event):
+        source = self.source_var.get()
+        source_key = next((k for k, v in self.source_names.items() if v == source), None)
+        if source_key:
+            self.download_path_var.set(self.downloader.download_paths.get(source_key, ""))
+            
+    def browse_current_folder(self):
+        folder = filedialog.askdirectory()
+        if folder:
+            self.download_path_var.set(folder)
+            source = self.source_var.get()
+            source_key = next((k for k, v in self.source_names.items() if v == source), None)
+            if source_key:
+                self.downloader.download_paths[source_key] = folder
+                self.downloader.save_config()
+                
+    def get_selected_date(self):
+        try:
+            date_str = f"{self.day_var.get()} {self.month_var.get()} {self.year_var.get()}"
+            return datetime.strptime(date_str, "%d %B %Y")
+        except ValueError:
+            messagebox.showerror("Error", "Invalid date selected")
+            return None
+            
+    def manual_download(self):
+        date = self.get_selected_date()
+        if not date:
             return
-
-        # Disable buttons
+            
+        self.downloader.target_date = date
         self.start_btn.configure(state="disabled")
         self.stop_btn.configure(state="disabled")
-        if hasattr(self, 'manual_btn'):
-            self.manual_btn.configure(state="disabled")
+        self.manual_btn.configure(state="disabled")
+        
+        threading.Thread(target=self.run_download_thread, args=('defaults',), daemon=True).start()
+        
+    def download_optionals(self):
+        date = self.get_selected_date()
+        if not date:
+            return
             
-        # Run download in thread (Optionals Only)
-        threading.Thread(target=self.run_download_thread, args=('optionals',)).start()
-    
+        self.downloader.target_date = date
+        self.start_btn.configure(state="disabled")
+        self.stop_btn.configure(state="disabled")
+        self.manual_btn.configure(state="disabled")
+        
+        threading.Thread(target=self.run_download_thread, args=('optionals',), daemon=True).start()
+        
     def update_progress(self, value, message="", bar="main"):
-        """Update progress bar and message"""
         display_text = f"[{value}%] {message}" if message else f"{value}%"
         
         if bar == "main":
             self.progress_bar.set(value / 100.0)
-            self.progress_label.config(text=display_text)
+            self.progress_label.configure(text=display_text)
         elif bar == "optional":
             self.opt_progress_bar.set(value / 100.0)
-            self.opt_progress_label.config(text=display_text)
+            self.opt_progress_label.configure(text=display_text)
             
         self.root.update_idletasks()
-    
-    def reset_progress(self):
-        """Reset progress bar to 0 and re-enable buttons"""
-        self.progress_bar.set(0)
-        self.progress_label.config(text="Ready")
-        self.opt_progress_bar.set(0)
-        self.opt_progress_label.config(text="Ready")
         
-        # Re-enable buttons if scheduler is not running
-        if not self.downloader.is_running:
+    def reset_progress(self):
+        self.progress_bar.set(0)
+        self.progress_label.configure(text="Ready")
+        self.opt_progress_bar.set(0)
+        self.opt_progress_label.configure(text="Ready")
+        
+        if not getattr(self, 'is_running', False):
             self.start_btn.configure(state="normal")
             self.stop_btn.configure(state="disabled")
-            # Manual download button is always enabled when scheduler is not running
-            # We need to find the manual button reference. 
-            # It wasn't stored in self.manual_btn in create_widgets, let's fix that too.
-            if hasattr(self, 'manual_btn'):
+            if not getattr(self.downloader, 'auto_mode', False):
                 self.manual_btn.configure(state="normal")
         else:
-            # If scheduler is running, stop button should be enabled
             self.stop_btn.configure(state="normal")
             self.start_btn.configure(state="disabled")
-            # Manual download might be disabled during scheduled run? 
-            # Usually we allow manual download even if scheduler is waiting.
-            if hasattr(self, 'manual_btn'):
+            if not getattr(self.downloader, 'auto_mode', False):
                 self.manual_btn.configure(state="normal")
-
-        self.root.update_idletasks()
-    
+            
     def validate_time(self, time_str):
-        """Validate time format HH:MM and return normalized string"""
         try:
-            parts = time_str.strip().split(":")
-            if len(parts) != 2:
-                return False, None
-            hour, minute = int(parts[0]), int(parts[1])
-            if 0 <= hour < 24 and 0 <= minute < 60:
-                # Return normalized HH:MM format (ensures leading zeros for 'schedule' library)
-                return True, f"{hour:02d}:{minute:02d}"
-            return False, None
-        except:
-            return False, None
-    
+            datetime.strptime(time_str.strip(), "%H:%M")
+            return True
+        except ValueError:
+            return False
+            
     def validate_times(self, times_str):
-        """Validate multiple times separated by commas and return normalized list"""
-        if not times_str.strip():
-            return False, "Empty time string"
-            
-        raw_times = [t.strip() for t in times_str.split(",")]
-        valid_times = []
-        for time_str in raw_times:
-            if not time_str: continue
-            is_valid, formatted = self.validate_time(time_str)
-            if not is_valid:
-                return False, time_str
-            if formatted not in valid_times: # Avoid duplicates
-                valid_times.append(formatted)
-            
-        if not valid_times:
-            return False, "No valid times found"
-            
-        # Sort times to keep them organized
-        valid_times.sort()
-            
-        return True, valid_times
-    
+        times = [t.strip() for t in times_str.split(",")]
+        return all(self.validate_time(t) for t in times)
+        
     def start_scheduler(self):
-        # Validate inputs
-        valid, result = self.validate_times(self.time_var.get())
-        if not valid:
-            messagebox.showerror("Invalid Time", f"Invalid time format: '{result}'\nPlease enter times in HH:MM format (24-hour)\nSeparate multiple times with commas")
+        times_str = self.time_var.get()
+        if not self.validate_times(times_str):
+            messagebox.showerror("Error", "Invalid time format. Please use HH:MM (24-hour)")
             return
-        
-        # Update downloader settings with normalized times
-        self.downloader.scheduled_times = result
-        
-        # Update enabled downloads
-        self.downloader.enabled_downloads = []
-        for key, var in self.selected_downloads.items():
-            if var.get():
-                self.downloader.enabled_downloads.append(key)
-                
+            
+        self.downloader.scheduled_times = [t.strip() for t in times_str.split(",")]
         self.downloader.save_config()
-        
-        # Update display to show normalized times
-        self.time_var.set(", ".join(result))
-        
-        # Create download directories if they don't exist
-        for path in self.downloader.download_paths.values():
-            if not os.path.exists(path):
-                os.makedirs(path)
-        
-        # Setup and start scheduler
         self.downloader.schedule_download()
         
-        # Check if today is weekend and show info (only if weekend downloads are disabled)
-        from datetime import datetime
-        current_day = datetime.now().weekday()
-        day_name = datetime.now().strftime('%A')
-        
-        if current_day in [5, 6] and not self.downloader.weekend_downloads_enabled:  # Saturday or Sunday
-            messagebox.showinfo(
-                "Weekend Detected", 
-                f"Today is {day_name}.\n\nThe market is closed on weekends.\nScheduled downloads will run on weekdays (Monday-Friday) only.\n\nYou can enable 'Enable Weekend Downloads' checkbox to download on weekends.\nYou can still use 'Download Now' for manual downloads."
-            )
-        
-        # Start scheduler in a separate thread if not already running
-        if not self.downloader.is_running:
-            self.scheduler_thread = threading.Thread(target=self.downloader.run_scheduler, daemon=True)
-            self.scheduler_thread.start()
-        
-        # Update UI
         self.start_btn.configure(state="disabled")
         self.stop_btn.configure(state="normal")
-        self.update_progress("Scheduler active and waiting...")
-    
+        
+        self.is_running = True
+        self.scheduler_thread = threading.Thread(target=self.downloader.run_scheduler, daemon=True)
+        self.scheduler_thread.start()
+        
+        self.update_progress(100, f"Scheduler running (Next: {schedule.next_run()})")
+        
     def stop_scheduler(self):
         self.downloader.is_running = False
-        schedule.clear()
-        
-        # Update UI
+        self.is_running = False
         self.start_btn.configure(state="normal")
         self.stop_btn.configure(state="disabled")
-    
-    def run_download_thread(self, mode='all'):
-        self.downloader.download_data(mode=mode)
-        # Re-enable buttons after download, but check if scheduler is running
-        def restore_buttons():
-            if self.downloader.is_running:
-                self.start_btn.configure(state="disabled")
-                self.stop_btn.configure(state="normal")
-            else:
-                self.start_btn.configure(state="normal")
-                self.stop_btn.configure(state="disabled")
-            
-            if hasattr(self, 'manual_btn'):
-                self.manual_btn.configure(state="normal")
-                
-        self.root.after(0, restore_buttons)
-    
-    def toggle_auto_mode(self):
-        """Toggle auto mode and save state"""
-        is_checked = self.auto_mode_var.get()
-        if hasattr(self, 'auto_mode_check'):
-            self.auto_mode_check.config(text=f"{'✔' if is_checked else '☐'} Auto Mode (8 AM - 8 PM, auto-start scheduler)")
-        self.downloader.auto_mode = is_checked
-        self.downloader.save_config()
+        schedule.clear()
+        self.update_progress(0, "Scheduler stopped")
         
+    def run_download_thread(self, mode='all'):
+        try:
+            self.downloader.download_data(mode)
+        except Exception as e:
+            logging.error(f"Error during download: {str(e)}")
+            self.update_progress(100, f"Error: {str(e)}", bar="main" if mode != 'optionals' else "optional")
+        finally:
+            self.root.after(0, self.reset_progress)
+            
+    def toggle_auto_mode(self):
+        self.downloader.auto_mode = self.auto_mode_var.get()
+        self.downloader.save_config()
         if self.downloader.auto_mode:
-            # Auto mode enabled - check if we should start scheduler
             self.check_and_start_auto_mode()
         else:
-            # Auto mode disabled - stop scheduler if running
-            if self.downloader.is_running:
+            if getattr(self, 'is_running', False):
                 self.stop_scheduler()
-    
+
     def toggle_weekend_downloads(self):
-        """Toggle weekend downloads and save state"""
-        is_checked = self.weekend_downloads_var.get()
-        if hasattr(self, 'weekend_check'):
-            self.weekend_check.config(text=f"{'✔' if is_checked else '☐'} Enable Weekend Downloads (Saturday & Sunday)")
-        self.downloader.weekend_downloads_enabled = is_checked
+        self.downloader.weekend_downloads_enabled = self.weekend_downloads_var.get()
         self.downloader.save_config()
-        logging.info(f"Weekend downloads {'enabled' if self.downloader.weekend_downloads_enabled else 'disabled'}")
-    
+
     def check_and_start_auto_mode(self):
-        """Check if current time is between 8 AM and 8 PM, and start scheduler if so"""
-        from datetime import datetime
-        
-        current_time = datetime.now()
-        current_hour = current_time.hour
-        
-        # Check if time is between 8 AM (08:00) and 8 PM (20:00)
-        if 8 <= current_hour < 20:
-            # Within auto mode hours - start scheduler if not already running
+        now = datetime.now()
+        current_time = now.time()
+        start_time = datetime.strptime("08:00", "%H:%M").time()
+        end_time = datetime.strptime("20:00", "%H:%M").time()
+
+        if start_time <= current_time <= end_time:
             if not self.downloader.is_running:
                 self.start_scheduler()
-                self.update_progress("[Auto Mode] Scheduler started automatically")
+                self.update_progress(100, "[Auto Mode] Scheduler started automatically")
         else:
-            # Outside auto mode hours
-            self.update_progress("[Auto Mode] Outside active hours (8 AM - 8 PM)")
+            self.update_progress(0, "[Auto Mode] Outside active hours (8 AM - 8 PM)")
 
 
 def main():
-    root = tk.Tk()
+    # Use CTk instead of Tk
+    ctk.set_appearance_mode("System")
+    ctk.set_default_color_theme("blue")
+    root = ctk.CTk()
     app = DownloaderGUI(root)
     root.mainloop()
-
 
 if __name__ == "__main__":
     main()

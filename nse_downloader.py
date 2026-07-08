@@ -1209,6 +1209,7 @@ class DownloaderGUI:
         self.root = root
         self.root.title("NSE Data Downloader")
         self.root.geometry("750x580")
+        self.root.minsize(500, 400)
         
         # Configure CTk appearance
         ctk.set_appearance_mode("System")
@@ -1249,7 +1250,7 @@ class DownloaderGUI:
         self.settings_tab = self.notebook.add("Settings")
         
         # --- DASHBOARD TAB ---
-        self.scrollable_dashboard = ctk.CTkFrame(self.dashboard_tab, fg_color="transparent")
+        self.scrollable_dashboard = ctk.CTkScrollableFrame(self.dashboard_tab, fg_color="transparent")
         self.scrollable_dashboard.pack(fill=tk.BOTH, expand=True)
         
         # Date Selection Section

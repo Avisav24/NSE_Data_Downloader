@@ -46,6 +46,8 @@ _Or browse the [releases folder](releases/) for all versions_
 ### 🚀 v5.0 Highlights
 
 - **Unified Auto-Scheduling**: A single, clean "Schedule Times" dashboard section now controls the exact times (e.g., `09:30, 12:00, 15:30`) for downloading **NIFTY 50**, **NIFTY 500**, and **Market Indices** simultaneously.
+- **Ultra-Compact Resizable UI**: The entire layout has been massively compressed to fit natively on smaller laptop screens (starts at `750x580`). Features a fully responsive scrollable fallback so you can shrink the window as much as you want without cutting off any buttons or options.
+- **Unified Progress Tracking**: Both Default and Optional download progress bars have been cleanly grouped into a single unified "Downloads Progress" section.
 - **CustomTkinter UI Overhaul (v5.0)**: Completely redesigned the interface using Apple-inspired aesthetics. Features 50px pill-shaped rounded corners, dark mode support, smooth progress bars, and a modern museum-gallery layout.
 - **NIFTY 50 Support**: Added dedicated download pipeline for NIFTY 50 index data as a core default alongside NIFTY 500.
 - **Improved Settings Tab**: Restored the intuitive "Download Locations" setting allowing you to pick custom paths for each file source.

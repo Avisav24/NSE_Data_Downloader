@@ -17,7 +17,7 @@ A powerful desktop application to automatically download **NIFTY 500**, **Market
 
 ### 🎯 **Ready-to-Use Windows Executable**
 
-**Latest Version: v4.1** | **Size: ~22 MB** | **Platform: Windows 10/11**
+**Latest Version: v4.2** | **Size: ~30 MB** | **Platform: Windows 10/11**
 
 <p>
       <a href="https://raw.githubusercontent.com/Avisav24/NSE_Data_Downloader/main/releases/NSE_Data_Downloader.exe">
@@ -42,6 +42,11 @@ _Or browse the [releases folder](releases/) for all versions_
 ## ✨ What's New
 
 <div align="center">
+
+### v4.2 Highlights
+
+- **Pill-Shaped Rounded UI**: Integrated `customtkinter` to provide gorgeous 50px fully rounded pill buttons and progress bars.
+- **Green Progress Bars**: Updated the progress indicators to a sleek, Apple-inspired green.
 
 ### v4.1 Highlights
 

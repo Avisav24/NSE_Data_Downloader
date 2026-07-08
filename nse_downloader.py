@@ -1342,13 +1342,13 @@ class DownloaderGUI:
         
         ttk.Label(opt_prog_frame, text="Optional Progress:", font=("Arial", 8, "bold")).pack(anchor=tk.W)
         
-        self.opt_progress_var = tk.IntVar(value=0)
-        self.opt_progress_bar = ttk.Progressbar(
+        self.opt_progress_bar = ctk.CTkProgressBar(
             opt_prog_frame,
-            variable=self.opt_progress_var,
-            maximum=100,
-            mode='determinate'
+            corner_radius=50,
+            progress_color="#28a745", # Green
+            height=12
         )
+        self.opt_progress_bar.set(0)
         self.opt_progress_bar.pack(fill=tk.X, pady=1)
         
         self.opt_progress_label = ttk.Label(
@@ -1405,31 +1405,37 @@ class DownloaderGUI:
         button_frame = ttk.Frame(self.dashboard_tab)
         button_frame.pack(pady=3)
         
-        self.start_btn = ttk.Button(
+        self.start_btn = ctk.CTkButton(
             button_frame,
             text="Start Scheduler",
             command=self.start_scheduler,
-            width=18
+            width=140, height=36, corner_radius=50,
+            fg_color="#0066cc", hover_color="#0071e3", text_color="white",
+            font=("Helvetica", 12, "bold")
         )
-        self.start_btn.pack(side=tk.LEFT, padx=2)
+        self.start_btn.pack(side=tk.LEFT, padx=4)
         
-        self.stop_btn = ttk.Button(
+        self.stop_btn = ctk.CTkButton(
             button_frame,
             text="Stop Scheduler",
             command=self.stop_scheduler,
-            state=tk.DISABLED,
-            width=18
+            state="disabled",
+            width=140, height=36, corner_radius=50,
+            fg_color="#0066cc", hover_color="#0071e3", text_color="white",
+            font=("Helvetica", 12, "bold")
         )
-        self.stop_btn.pack(side=tk.LEFT, padx=2)
+        self.stop_btn.pack(side=tk.LEFT, padx=4)
         
         # Manual Download Button
-        self.manual_btn = ttk.Button(
+        self.manual_btn = ctk.CTkButton(
             button_frame,
             text="Download Now",
             command=self.manual_download,
-            width=25
+            width=160, height=36, corner_radius=50,
+            fg_color="#0066cc", hover_color="#0071e3", text_color="white",
+            font=("Helvetica", 12, "bold")
         )
-        self.manual_btn.pack(side=tk.LEFT, padx=2)
+        self.manual_btn.pack(side=tk.LEFT, padx=4)
         
         # Progress Bar Section - compact
         progress_frame = ttk.LabelFrame(self.dashboard_tab, text="Main Progress", padding="2")
@@ -1437,14 +1443,13 @@ class DownloaderGUI:
         
         # Main Progress (NIFTY 500 & Indices)
         ttk.Label(progress_frame, text="Main (NIFTY 500 & Indices):", font=("Arial", 8, "bold")).pack(anchor=tk.W, padx=2)
-        self.progress_var = tk.IntVar(value=0)
-        self.progress_bar = ttk.Progressbar(
+        self.progress_bar = ctk.CTkProgressBar(
             progress_frame,
-            variable=self.progress_var,
-            maximum=100,
-            mode='determinate',
-            length=520
+            width=520, height=16,
+            corner_radius=50,
+            progress_color="#28a745" # Green
         )
+        self.progress_bar.set(0)
         self.progress_bar.pack(pady=1, fill=tk.X, padx=2)
         
         self.progress_label = ttk.Label(
@@ -1600,10 +1605,10 @@ class DownloaderGUI:
                 self.downloader.schedule_download()
         
         # Disable buttons
-        self.start_btn.config(state=tk.DISABLED)
-        self.stop_btn.config(state=tk.DISABLED)
+        self.start_btn.configure(state="disabled")
+        self.stop_btn.configure(state="disabled")
         if hasattr(self, 'manual_btn'):
-            self.manual_btn.config(state=tk.DISABLED)
+            self.manual_btn.configure(state="disabled")
         
         # Run download in thread (Defaults Only)
         threading.Thread(target=self.run_download_thread, args=('defaults',)).start()
@@ -1638,10 +1643,10 @@ class DownloaderGUI:
             return
 
         # Disable buttons
-        self.start_btn.config(state=tk.DISABLED)
-        self.stop_btn.config(state=tk.DISABLED)
+        self.start_btn.configure(state="disabled")
+        self.stop_btn.configure(state="disabled")
         if hasattr(self, 'manual_btn'):
-            self.manual_btn.config(state=tk.DISABLED)
+            self.manual_btn.configure(state="disabled")
             
         # Run download in thread (Optionals Only)
         threading.Thread(target=self.run_download_thread, args=('optionals',)).start()
@@ -1651,38 +1656,38 @@ class DownloaderGUI:
         display_text = f"[{value}%] {message}" if message else f"{value}%"
         
         if bar == "main":
-            self.progress_var.set(value)
+            self.progress_bar.set(value / 100.0)
             self.progress_label.config(text=display_text)
         elif bar == "optional":
-            self.opt_progress_var.set(value)
+            self.opt_progress_bar.set(value / 100.0)
             self.opt_progress_label.config(text=display_text)
             
         self.root.update_idletasks()
     
     def reset_progress(self):
         """Reset progress bar to 0 and re-enable buttons"""
-        self.progress_var.set(0)
+        self.progress_bar.set(0)
         self.progress_label.config(text="Ready")
-        self.opt_progress_var.set(0)
+        self.opt_progress_bar.set(0)
         self.opt_progress_label.config(text="Ready")
         
         # Re-enable buttons if scheduler is not running
         if not self.downloader.is_running:
-            self.start_btn.config(state=tk.NORMAL)
-            self.stop_btn.config(state=tk.DISABLED)
+            self.start_btn.configure(state="normal")
+            self.stop_btn.configure(state="disabled")
             # Manual download button is always enabled when scheduler is not running
             # We need to find the manual button reference. 
             # It wasn't stored in self.manual_btn in create_widgets, let's fix that too.
             if hasattr(self, 'manual_btn'):
-                self.manual_btn.config(state=tk.NORMAL)
+                self.manual_btn.configure(state="normal")
         else:
             # If scheduler is running, stop button should be enabled
-            self.stop_btn.config(state=tk.NORMAL)
-            self.start_btn.config(state=tk.DISABLED)
+            self.stop_btn.configure(state="normal")
+            self.start_btn.configure(state="disabled")
             # Manual download might be disabled during scheduled run? 
             # Usually we allow manual download even if scheduler is waiting.
             if hasattr(self, 'manual_btn'):
-                self.manual_btn.config(state=tk.NORMAL)
+                self.manual_btn.configure(state="normal")
 
         self.root.update_idletasks()
     
@@ -1769,8 +1774,8 @@ class DownloaderGUI:
             self.scheduler_thread.start()
         
         # Update UI
-        self.start_btn.config(state=tk.DISABLED)
-        self.stop_btn.config(state=tk.NORMAL)
+        self.start_btn.configure(state="disabled")
+        self.stop_btn.configure(state="normal")
         self.update_progress("Scheduler active and waiting...")
     
     def stop_scheduler(self):
@@ -1778,22 +1783,22 @@ class DownloaderGUI:
         schedule.clear()
         
         # Update UI
-        self.start_btn.config(state=tk.NORMAL)
-        self.stop_btn.config(state=tk.DISABLED)
+        self.start_btn.configure(state="normal")
+        self.stop_btn.configure(state="disabled")
     
     def run_download_thread(self, mode='all'):
         self.downloader.download_data(mode=mode)
         # Re-enable buttons after download, but check if scheduler is running
         def restore_buttons():
             if self.downloader.is_running:
-                self.start_btn.config(state=tk.DISABLED)
-                self.stop_btn.config(state=tk.NORMAL)
+                self.start_btn.configure(state="disabled")
+                self.stop_btn.configure(state="normal")
             else:
-                self.start_btn.config(state=tk.NORMAL)
-                self.stop_btn.config(state=tk.DISABLED)
+                self.start_btn.configure(state="normal")
+                self.stop_btn.configure(state="disabled")
             
             if hasattr(self, 'manual_btn'):
-                self.manual_btn.config(state=tk.NORMAL)
+                self.manual_btn.configure(state="normal")
                 
         self.root.after(0, restore_buttons)
     

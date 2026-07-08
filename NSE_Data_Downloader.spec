@@ -1,12 +1,13 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+from PyInstaller.utils.hooks import collect_data_files
 
 a = Analysis(
     ['nse_downloader.py'],
     pathex=[],
     binaries=[],
-    datas=[],
-    hiddenimports=['selenium', 'requests', 'schedule'],
+    datas=collect_data_files('customtkinter'),
+    hiddenimports=['selenium', 'requests', 'schedule', 'customtkinter'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

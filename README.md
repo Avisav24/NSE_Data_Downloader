@@ -197,7 +197,7 @@ The application now fetches the following reports automatically:
 <th>Setup Time</th>
 </tr>
 <tr>
-<td><b><a href="https://raw.githubusercontent.com/Avisav24/NSE_Data_Downloader/main/releases/NSE_Data_Downloader.exe">Windows EXE</a></b> ⭐</td>
+<td><b><a href="https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_Data_Downloader.exe">Windows EXE</a></b> 📦</td>
 <td>End users, Startup apps</td>
 <td>Windows 10/11</td>
 <td>1 min</td>
@@ -303,8 +303,6 @@ Examples:
 - **User-Friendly Interface**: Easy-to-use graphical interface with clear labels
 
 ## 📋 Requirements
-
-> > > > > > > a512c1f (Update downloader GUI, fix OI Spurts csv, rebuild exe)
 
 ### For Executable (Windows)
 

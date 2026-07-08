@@ -85,7 +85,9 @@ class NSEDownloader:
             'bse_cash_bhavcopy': eod_base_path
         }
         
-        self.scheduled_times = ["09:30"]  # Now supports multiple times
+        self.scheduled_times = ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", 
+                              "12:00", "12:30", "13:00", "13:30", "14:00", "14:30", 
+                              "15:00", "15:30", "16:00"]
         self.optional_download_time = "21:00"  # Optional files run at 9 PM daily
         self.is_running = False
         self.auto_mode = False  # Auto mode: scheduler runs 8 AM - 8 PM

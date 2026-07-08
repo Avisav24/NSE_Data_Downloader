@@ -1158,11 +1158,7 @@ class DownloaderGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("NSE Data Downloader")
-        self.root.geometry("1920x1080")  # Full HD
-        try:
-            self.root.state('zoomed')  # Maximize
-        except:
-            pass
+        self.root.geometry("1024x768")  # Compact HD
         self.root.configure(bg="#f5f5f7")
         
         # Apply Apple-inspired aesthetic

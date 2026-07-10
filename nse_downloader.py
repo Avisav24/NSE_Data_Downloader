@@ -559,57 +559,60 @@ class NSEDownloader:
             # ── Spot price: poll #equity_underlyingVal inside the browser's JS engine ──
             # execute_async_script runs the polling loop inside Chrome's own event loop,
             # so it fires correctly when Angular/NSE pushes the live value into the DOM.
-            self.current_spot_price = '0'
-            try:
-                # First check: what does the element currently contain (for debug)?
-                dbg = driver.execute_script(
-                    "var e=document.getElementById('equity_underlyingVal');"
-                    "return e ? (e.innerText||e.textContent||'[empty]').trim() : '[not found]';"
-                )
-                print(f"  🔍 equity_underlyingVal current content: '{dbg}'")
-
-                driver.set_script_timeout(30)   # allow up to 30s for the async script
-                spot_js = """
-var callback = arguments[0];
-var maxWait  = 25000;   // 25 seconds total
-var interval = 400;     // poll every 400 ms
-var elapsed  = 0;
-
-var timer = setInterval(function () {
-    var el = document.getElementById('equity_underlyingVal');
-    if (el) {
-        // innerText works on visible elements; textContent works even if hidden
-        var txt = (el.innerText || el.textContent || '').replace(/,/g, '').trim();
-        if (txt) {
-            var tokens = txt.split(/\\s+/);
-            for (var i = tokens.length - 1; i >= 0; i--) {
-                var v = parseFloat(tokens[i]);
-                if (!isNaN(v) && v > 1000) {
-                    clearInterval(timer);
-                    callback(String(Math.round(v)));
-                    return;
+            current_spot = getattr(self, 'current_spot_price', '0')
+            if current_spot == '0':
+                try:
+                    # First check: what does the element currently contain (for debug)?
+                    dbg = driver.execute_script(
+                        "var e=document.getElementById('equity_underlyingVal');"
+                        "return e ? (e.innerText||e.textContent||'[empty]').trim() : '[not found]';"
+                    )
+                    print(f"  🔍 equity_underlyingVal current content: '{dbg}'")
+    
+                    driver.set_script_timeout(30)   # allow up to 30s for the async script
+                    spot_js = """
+    var callback = arguments[0];
+    var maxWait  = 25000;   // 25 seconds total
+    var interval = 400;     // poll every 400 ms
+    var elapsed  = 0;
+    
+    var timer = setInterval(function () {
+        var el = document.getElementById('equity_underlyingVal');
+        if (el) {
+            // innerText works on visible elements; textContent works even if hidden
+            var txt = (el.innerText || el.textContent || '').replace(/,/g, '').trim();
+            if (txt) {
+                var tokens = txt.split(/\\s+/);
+                for (var i = tokens.length - 1; i >= 0; i--) {
+                    var v = parseFloat(tokens[i]);
+                    if (!isNaN(v) && v > 1000) {
+                        clearInterval(timer);
+                        callback(String(Math.round(v)));
+                        return;
+                    }
                 }
             }
         }
-    }
-    elapsed += interval;
-    if (elapsed >= maxWait) {
-        clearInterval(timer);
-        callback('0');
-    }
-}, interval);
-"""
-                spot_val = driver.execute_async_script(spot_js)
-                self.current_spot_price = spot_val if spot_val and spot_val != '0' else '0'
-                if self.current_spot_price != '0':
-                    print(f"  📊 Nifty spot from browser: {self.current_spot_price}")
-                    logging.info(f"Spot price read from #equity_underlyingVal: {self.current_spot_price}")
-                else:
-                    print("  ⚠️ equity_underlyingVal still empty after 25s — filename will use spot_0")
-                    logging.warning("equity_underlyingVal empty/not found after 25s polling")
-            except Exception as spot_err:
-                logging.warning(f"Spot price script error: {spot_err}")
-                print(f"  ⚠️ Spot price error: {spot_err}")
+        elapsed += interval;
+        if (elapsed >= maxWait) {
+            clearInterval(timer);
+            callback('0');
+        }
+    }, interval);
+    """
+                    spot_val = driver.execute_async_script(spot_js)
+                    self.current_spot_price = spot_val if spot_val and spot_val != '0' else '0'
+                    if self.current_spot_price != '0':
+                        print(f"  📊 Nifty spot from browser: {self.current_spot_price}")
+                        logging.info(f"Spot price read from #equity_underlyingVal: {self.current_spot_price}")
+                    else:
+                        print("  ⚠️ equity_underlyingVal still empty after 25s — filename will use spot_0")
+                        logging.warning("equity_underlyingVal empty/not found after 25s polling")
+                except Exception as spot_err:
+                    logging.warning(f"Spot price script error: {spot_err}")
+                    print(f"  ⚠️ Spot price error: {spot_err}")
+            else:
+                print(f"  ✅ Using existing Nifty spot price: {current_spot}")
 
             return True
         except Exception as e:

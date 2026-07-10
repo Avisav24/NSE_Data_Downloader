@@ -1849,7 +1849,7 @@ class DownloaderGUI:
         self.scheduler_thread = threading.Thread(target=self.downloader.run_scheduler, daemon=True)
         self.scheduler_thread.start()
         
-        self.update_progress(100, f"Scheduler running (Next: {schedule.next_run()})")
+        self.update_progress(0, f"Scheduler running — waiting for next download (Next: {schedule.next_run()})")
         
     def stop_scheduler(self):
         self.downloader.is_running = False
@@ -1890,7 +1890,7 @@ class DownloaderGUI:
         if start_time <= current_time <= end_time:
             if not self.downloader.is_running:
                 self.start_scheduler()
-                self.update_progress(100, "[Auto Mode] Scheduler started automatically")
+                self.update_progress(0, "[Auto Mode] Scheduler started — waiting for next download")
         else:
             self.update_progress(0, "[Auto Mode] Outside active hours (8 AM - 8 PM)")
 

@@ -17,7 +17,7 @@ A powerful desktop application to automatically download **NIFTY 500**, **Market
 
 ### 🎯 **Ready-to-Use Windows Executable**
 
-**Latest Version: v5.2** | **Size: ~23 MB** | **Platform: Windows 10/11**
+**Latest Version: v5.3** | **Size: ~22 MB** | **Platform: Windows 10/11**
 
 <p>
       <a href="https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_Data_Downloader.exe">
@@ -42,6 +42,10 @@ _Or browse the [releases folder](releases/) for all versions_
 ## ✨ What's New
 
 <div align="center">
+
+### 🚀 v5.3 Highlights
+
+- **Progress Bar Fix**: After enabling Auto Mode or starting the Scheduler, the progress bar no longer jumps to 100% (full). It now correctly stays at 0% (idle) while waiting for the next scheduled download, and only fills during an active download.
 
 ### 🚀 v5.2 Highlights
 

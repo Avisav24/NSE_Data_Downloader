@@ -556,25 +556,60 @@ class NSEDownloader:
             if expiry_options:
                 Select(expiry_select).select_by_visible_text(expiry_options[0])
 
-            time.sleep(1.5)
-            
-            # Try to extract the live spot price
+            # ── Spot price: poll #equity_underlyingVal inside the browser's JS engine ──
+            # execute_async_script runs the polling loop inside Chrome's own event loop,
+            # so it fires correctly when Angular/NSE pushes the live value into the DOM.
+            self.current_spot_price = '0'
             try:
-                spot_script = """
-                let el = document.getElementById('equity_underlyingVal');
-                if (el && el.innerText) {
-                    let parts = el.innerText.trim().split(' ');
-                    if (parts.length > 0) {
-                        return parts[parts.length - 1].replace(/,/g, '');
-                    }
+                # First check: what does the element currently contain (for debug)?
+                dbg = driver.execute_script(
+                    "var e=document.getElementById('equity_underlyingVal');"
+                    "return e ? (e.innerText||e.textContent||'[empty]').trim() : '[not found]';"
+                )
+                print(f"  🔍 equity_underlyingVal current content: '{dbg}'")
+
+                driver.set_script_timeout(30)   # allow up to 30s for the async script
+                spot_js = """
+var callback = arguments[0];
+var maxWait  = 25000;   // 25 seconds total
+var interval = 400;     // poll every 400 ms
+var elapsed  = 0;
+
+var timer = setInterval(function () {
+    var el = document.getElementById('equity_underlyingVal');
+    if (el) {
+        // innerText works on visible elements; textContent works even if hidden
+        var txt = (el.innerText || el.textContent || '').replace(/,/g, '').trim();
+        if (txt) {
+            var tokens = txt.split(/\\s+/);
+            for (var i = tokens.length - 1; i >= 0; i--) {
+                var v = parseFloat(tokens[i]);
+                if (!isNaN(v) && v > 1000) {
+                    clearInterval(timer);
+                    callback(String(Math.round(v)));
+                    return;
                 }
-                return '0';
-                """
-                spot_val = driver.execute_script(spot_script)
-                self.current_spot_price = spot_val if spot_val else '0'
-            except Exception as e:
-                logging.warning(f"Could not extract spot price: {e}")
-                self.current_spot_price = '0'
+            }
+        }
+    }
+    elapsed += interval;
+    if (elapsed >= maxWait) {
+        clearInterval(timer);
+        callback('0');
+    }
+}, interval);
+"""
+                spot_val = driver.execute_async_script(spot_js)
+                self.current_spot_price = spot_val if spot_val and spot_val != '0' else '0'
+                if self.current_spot_price != '0':
+                    print(f"  📊 Nifty spot from browser: {self.current_spot_price}")
+                    logging.info(f"Spot price read from #equity_underlyingVal: {self.current_spot_price}")
+                else:
+                    print("  ⚠️ equity_underlyingVal still empty after 25s — filename will use spot_0")
+                    logging.warning("equity_underlyingVal empty/not found after 25s polling")
+            except Exception as spot_err:
+                logging.warning(f"Spot price script error: {spot_err}")
+                print(f"  ⚠️ Spot price error: {spot_err}")
 
             return True
         except Exception as e:
@@ -657,6 +692,76 @@ class NSEDownloader:
             time.sleep(3)
             driver.get("https://www.nseindia.com/market-data/live-index-watch")
             time.sleep(3)
+
+            # ── Read Nifty spot price from live-index-watch page ──────────────────
+            # This page shows all indices including NIFTY 50 live value.
+            # We poll inside the browser's JS engine so Angular data binding is caught.
+            self.current_spot_price = '0'
+            try:
+                driver.set_script_timeout(20)
+                nifty_spot_js = """
+var callback = arguments[0];
+var maxWait  = 15000;
+var interval = 400;
+var elapsed  = 0;
+
+function extractNifty() {
+    // Strategy A: look for any element whose text contains 'NIFTY 50' or 'Nifty 50'
+    // and grab the nearby number, OR find a table row with NIFTY and read the LTP cell.
+    var rows = document.querySelectorAll('tr');
+    for (var i = 0; i < rows.length; i++) {
+        var cells = rows[i].querySelectorAll('td');
+        for (var j = 0; j < cells.length; j++) {
+            var txt = (cells[j].innerText || cells[j].textContent || '').trim();
+            if (/^NIFTY 50$/i.test(txt) || /^NIFTY50$/i.test(txt)) {
+                // Next cell or nearby cells likely have the LTP value
+                for (var k = j + 1; k < cells.length && k <= j + 3; k++) {
+                    var val = parseFloat((cells[k].innerText || cells[k].textContent || '').replace(/,/g,''));
+                    if (!isNaN(val) && val > 1000) {
+                        return String(Math.round(val));
+                    }
+                }
+            }
+        }
+    }
+    // Strategy B: scan all visible text nodes for a number > 10000 near "NIFTY"
+    var allEls = document.querySelectorAll('td, span, div');
+    var prev = '';
+    for (var i = 0; i < allEls.length; i++) {
+        var t = (allEls[i].innerText || allEls[i].textContent || '').trim();
+        if (/nifty 50/i.test(prev + ' ' + t)) {
+            var v = parseFloat(t.replace(/,/g,''));
+            if (!isNaN(v) && v > 10000) return String(Math.round(v));
+        }
+        if (t) prev = t;
+    }
+    return null;
+}
+
+var timer = setInterval(function() {
+    var result = extractNifty();
+    if (result) {
+        clearInterval(timer);
+        callback(result);
+        return;
+    }
+    elapsed += interval;
+    if (elapsed >= maxWait) {
+        clearInterval(timer);
+        callback('0');
+    }
+}, interval);
+"""
+                spot_val = driver.execute_async_script(nifty_spot_js)
+                if spot_val and spot_val != '0':
+                    self.current_spot_price = spot_val
+                    print(f"  📊 Nifty 50 spot (from live-index-watch): {self.current_spot_price}")
+                    logging.info(f"Nifty spot price captured: {self.current_spot_price}")
+                else:
+                    print("  ⚠️ Could not read Nifty spot from live-index-watch — will try on option-chain page")
+            except Exception as spot_err:
+                logging.warning(f"Live-index-watch spot read error: {spot_err}")
+                print(f"  ⚠️ Spot read error: {spot_err}")
             
             success_nifty50 = False
             if mode in ['all', 'defaults']:
@@ -717,6 +822,39 @@ class NSEDownloader:
                     progress_offset=75,
                     progress_bar='main'
                 )
+
+            # ── Read Nifty 50 spot from the already-downloaded MarketIndices CSV ──
+            # MarketIndices CSV row format: "NIFTY 50","24,182.10",...
+            # Column 1 (index 1) = CURRENT value — always reliable, no DOM scraping needed.
+            if success_market:
+                try:
+                    import glob, csv
+                    abs_market_path = os.path.abspath(self.download_paths['market_indices'])
+                    market_files = sorted(
+                        glob.glob(os.path.join(abs_market_path, 'MarketIndices_*.csv')),
+                        key=os.path.getmtime, reverse=True
+                    )
+                    if market_files:
+                        with open(market_files[0], newline='', encoding='utf-8-sig') as mf:
+                            reader = csv.reader(mf)
+                            for row in reader:
+                                if row and row[0].strip().strip('"') == 'NIFTY 50':
+                                    raw_val = row[1].strip().strip('"').replace(',', '') if len(row) > 1 else ''
+                                    try:
+                                        val = int(float(raw_val))
+                                        if val > 1000:
+                                            self.current_spot_price = str(val)
+                                            print(f"  📊 Nifty 50 spot (from MarketIndices CSV): {self.current_spot_price}")
+                                            logging.info(f"Nifty spot from CSV: {self.current_spot_price}")
+                                            break
+                                    except (ValueError, TypeError):
+                                        pass
+                except Exception as csv_err:
+                    logging.warning(f"Could not read Nifty spot from MarketIndices CSV: {csv_err}")
+                    print(f"  ⚠️ Spot CSV read error: {csv_err}")
+
+            if success_market and self.current_spot_price == '0':
+                print("  ⚠️ NIFTY 50 row not found in MarketIndices CSV — spot will be 0")
 
             success_option_chain = False
             if mode in ['all', 'defaults']:
@@ -931,18 +1069,21 @@ class NSEDownloader:
             str: New filename if successful, None if failed
         """
         try:
+            # Always work with an absolute, normalised path so all comparisons are consistent
+            abs_download_path = os.path.abspath(download_path)
+
             # Force delete any incomplete and unwanted download files for nifty500
             if source_name == 'nifty500':
                 try:
                     # Delete incomplete download file
-                    incomplete_file = os.path.join(download_path, 'downloads.htm.crdownload')
+                    incomplete_file = os.path.join(abs_download_path, 'downloads.htm.crdownload')
                     if os.path.exists(incomplete_file):
                         os.remove(incomplete_file)
                         logging.info(f"Deleted incomplete download file: {incomplete_file}")
                         print(f"  🗑️ Deleted incomplete download: downloads.htm.crdownload")
                     
                     # Delete completed downloads.htm if it exists (unwanted HTML file)
-                    html_file = os.path.join(download_path, 'downloads.htm')
+                    html_file = os.path.join(abs_download_path, 'downloads.htm')
                     if os.path.exists(html_file):
                         os.remove(html_file)
                         logging.info(f"Deleted unwanted HTML file: {html_file}")
@@ -950,7 +1091,7 @@ class NSEDownloader:
                 except Exception as e:
                     logging.warning(f"Could not delete download files: {str(e)}")
             
-            logging.info(f"Searching for downloaded file from {source_name} in: {download_path}")
+            logging.info(f"Searching for downloaded file from {source_name} in: {abs_download_path}")
             
             # Wait for file to appear and download to complete
             max_wait = 10 if skip_stability_check else 30  # Even faster for direct downloads
@@ -962,18 +1103,20 @@ class NSEDownloader:
                 latest_file = preferred_file
             
             # Check both configured path and default Downloads folder
-            paths_to_check = [download_path]
-            default_downloads = os.path.join(os.path.expanduser("~"), "Downloads")
-            if default_downloads != download_path and os.path.exists(default_downloads):
+            # Use abspath for all entries so comparisons are always consistent
+            paths_to_check = [abs_download_path]
+            default_downloads = os.path.abspath(os.path.join(os.path.expanduser("~"), "Downloads"))
+            if default_downloads != abs_download_path and os.path.exists(default_downloads):
                 paths_to_check.append(default_downloads)
                 
             for path in getattr(self, 'download_paths', {}).values():
-                if os.path.exists(path) and path not in paths_to_check:
-                    paths_to_check.append(path)
+                norm_path = os.path.abspath(path)
+                if os.path.exists(norm_path) and norm_path not in paths_to_check:
+                    paths_to_check.append(norm_path)
             
             # Ensure download path exists
-            if not os.path.exists(download_path):
-                os.makedirs(download_path)
+            if not os.path.exists(abs_download_path):
+                os.makedirs(abs_download_path)
             
             print(f"Checking paths for {source_name}: {paths_to_check}")
             
@@ -1094,7 +1237,7 @@ class NSEDownloader:
                 file_date = self.target_date if hasattr(self, 'target_date') and self.target_date else now
                 
             date_str = file_date.strftime('%d%m%y')  # e.g., 011025
-            time_str = now.strftime('%H%M')   # e.g., 1425 for 2:25 PM
+            time_str = now.strftime('%H%M') + 'min'  # e.g., 1425min for 2:25 PM
             
             # Get original filename (without extension)
             original_name = os.path.basename(latest_file)
@@ -1152,7 +1295,7 @@ class NSEDownloader:
             else:
                 # Optional files get only date
                 new_filename = f"{prefix}_{date_str}{extension}"
-            new_filepath = os.path.join(download_path, new_filename)
+            new_filepath = os.path.join(abs_download_path, new_filename)
             
             # If file with same name exists, add counter
             counter = 1
@@ -1164,21 +1307,23 @@ class NSEDownloader:
                     new_filename = f"{prefix}_{date_str}_spot_{spot_val}-{time_str}_{counter}{extension}"
                 else:
                     new_filename = f"{prefix}_{date_str}_{counter}{extension}"
-                new_filepath = os.path.join(download_path, new_filename)
+                new_filepath = os.path.join(abs_download_path, new_filename)
                 counter += 1
             
             # Move and rename the file
             if os.path.exists(latest_file):
-                # If file is in different folder, move it
-                if os.path.dirname(latest_file) != download_path:
+                # Compare normalised absolute paths to decide move vs rename
+                src_dir = os.path.abspath(os.path.dirname(latest_file))
+                if src_dir != abs_download_path:
                     import shutil
                     shutil.move(latest_file, new_filepath)
+                    logging.info(f"Moved '{original_name}' from '{src_dir}' to '{abs_download_path}'")
                 else:
                     os.rename(latest_file, new_filepath)
                 
                 logging.info(f"File renamed from '{original_name}' to '{new_filename}'")
                 print(f"  ✅ {source_name}: {new_filename}")
-                return new_filename
+                return new_filepath  # Return full absolute path for consistency
             else:
                 logging.error(f"File disappeared before rename: {latest_file}")
                 return None

@@ -17,7 +17,7 @@ A powerful desktop application to automatically download **NIFTY 500**, **Market
 
 ### 🎯 **Ready-to-Use Windows Executable**
 
-**Latest Version: v5.1** | **Size: ~30 MB** | **Platform: Windows 10/11**
+**Latest Version: v5.2** | **Size: ~23 MB** | **Platform: Windows 10/11**
 
 <p>
       <a href="https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_Data_Downloader.exe">
@@ -43,9 +43,16 @@ _Or browse the [releases folder](releases/) for all versions_
 
 <div align="center">
 
+### 🚀 v5.2 Highlights
+
+- **Live Nifty Spot in Filename**: Option Chain file is now automatically named with the real Nifty 50 spot price at download time (e.g., `Option_Chain_100726_spot_24182-1310min.csv`). Spot price is read directly from the MarketIndices CSV — no DOM scraping, always accurate.
+- **`min` Time Suffix**: All downloaded files now include a `min` suffix in the time portion (e.g., `-1310min`) for clarity.
+- **Consistent File Paths**: Fixed a path normalization bug where files could land in inconsistent folders depending on how the download path was passed internally.
+- **Robust Background Downloads**: Added global folder monitoring so that headless Chrome Data-URI downloads are caught instantly, eliminating timeouts.
+
 ### 🚀 v5.1 Highlights
 
-- **Clean Live Time Naming**: Unified the naming convention for NIFTY 50, NIFTY 500, Market Indices, and Option Chain. All files now use a clean time suffix (e.g., `-1935.csv` instead of `-1935min.csv`), and Option Chain seamlessly includes the live spot price (e.g., `_spot_24320.15-1935.csv`).
+- **Clean Live Time Naming**: Unified the naming convention for NIFTY 50, NIFTY 500, Market Indices, and Option Chain. All files now use a clean time suffix, and Option Chain seamlessly includes the live spot price.
 - **Robust Background Downloads**: Added global folder monitoring so that headless Chrome Data-URI downloads are caught instantly, eliminating timeouts.
 
 ### 🚀 v5.0 Highlights

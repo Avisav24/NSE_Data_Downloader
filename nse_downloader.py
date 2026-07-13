@@ -1294,7 +1294,7 @@ var timer = setInterval(function() {
                 new_filename = f"{prefix}_{date_str}-{time_str}{extension}"
             elif source_name == 'option_chain':
                 spot_val = getattr(self, 'current_spot_price', '0')
-                new_filename = f"{original_base}_spot_{spot_val}_at_{time_str}{extension}"
+                new_filename = f"{original_base}_spot_{spot_val}_at_{now.strftime('%H%M')}m{extension}"
             else:
                 # Optional files get only date
                 new_filename = f"{prefix}_{date_str}{extension}"
@@ -1307,7 +1307,7 @@ var timer = setInterval(function() {
                     new_filename = f"{prefix}_{date_str}-{time_str}_{counter}{extension}"
                 elif source_name == 'option_chain':
                     spot_val = getattr(self, 'current_spot_price', '0')
-                    new_filename = f"{original_base}_spot_{spot_val}_at_{time_str}_{counter}{extension}"
+                    new_filename = f"{original_base}_spot_{spot_val}_at_{now.strftime('%H%M')}m_{counter}{extension}"
                 else:
                     new_filename = f"{prefix}_{date_str}_{counter}{extension}"
                 new_filepath = os.path.join(abs_download_path, new_filename)

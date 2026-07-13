@@ -17,7 +17,7 @@ A powerful desktop application to automatically download **NIFTY 500**, **Market
 
 ### 🎯 **Ready-to-Use Windows Executable**
 
-**Latest Version: v5.3** | **Size: ~22 MB** | **Platform: Windows 10/11**
+**Latest Version: v5.4** | **Size: ~22 MB** | **Platform: Windows 10/11**
 
 <p>
       <a href="https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_Data_Downloader.exe">
@@ -42,6 +42,10 @@ _Or browse the [releases folder](releases/) for all versions_
 ## ✨ What's New
 
 <div align="center">
+
+### 🚀 v5.4 Highlights
+
+- **`m` Time Suffix for Option Chain**: Option chain filenames now use `m` instead of `min` for the time suffix (e.g. `at_1101m.csv`) for concise naming, while keeping the rest identical.
 
 ### 🚀 v5.3 Highlights
 

@@ -94,14 +94,20 @@ class NSEDownloader:
         self.weekend_downloads_enabled = False  # Allow downloads on weekends
         self.last_weekend_notification = None  # Track last weekend notification date
         self.enabled_downloads = list(self.direct_urls.keys()) # List of enabled optional downloads
-        self.config_file = "config.json"
+        if getattr(sys, 'frozen', False):
+            self.app_dir = os.path.dirname(sys.executable)
+        else:
+            self.app_dir = os.path.dirname(os.path.abspath(__file__))
+            
+        self.config_file = os.path.join(self.app_dir, "config.json")
         self.gui = gui
         self.headless_mode = True  # Run browser hidden in background
         self.load_config()
         
         # Setup logging
+        log_file = os.path.join(self.app_dir, 'nse_downloader.log')
         logging.basicConfig(
-            filename='nse_downloader.log',
+            filename=log_file,
             level=logging.INFO,
             format='%(asctime)s - %(levelname)s - %(message)s'
         )

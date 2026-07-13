@@ -94,10 +94,16 @@ class NSEDownloader:
         self.weekend_downloads_enabled = False  # Allow downloads on weekends
         self.last_weekend_notification = None  # Track last weekend notification date
         self.enabled_downloads = list(self.direct_urls.keys()) # List of enabled optional downloads
-        if getattr(sys, 'frozen', False):
-            self.app_dir = os.path.dirname(sys.executable)
-        else:
-            self.app_dir = os.path.dirname(os.path.abspath(__file__))
+        # Use a writable directory for config and logs
+        app_data_dir = os.path.join(os.path.expanduser("~"), "AppData", "Local", "NSE_Data_Downloader")
+        if not os.path.exists(app_data_dir):
+            try:
+                os.makedirs(app_data_dir)
+            except Exception:
+                # Fallback to user home directory if AppData fails
+                app_data_dir = os.path.expanduser("~")
+        
+        self.app_dir = app_data_dir
             
         self.config_file = os.path.join(self.app_dir, "config.json")
         self.gui = gui

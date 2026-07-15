@@ -129,23 +129,6 @@ class NSEDownloader:
                     if 'download_paths' in config:
                         self.download_paths.update(config.get('download_paths', {}))
 
-                        # Ensure legacy NSE_Data paths for optional files move to EOD_Data
-                        eod_base_path = os.path.join(os.path.expanduser("~"), "Downloads", "EOD_Data")
-
-                        for key in self.eod_source_keys:
-                            current_path = self.download_paths.get(key)
-                            if not current_path:
-                                continue
-
-                            normalized = os.path.normpath(current_path).lower()
-                            normalized_base = os.path.normpath(eod_base_path).lower()
-
-                            # If path is not the base path, but is inside EOD_Data or NSE_Data (legacy)
-                            # We flatten it to the root EOD_Data folder
-                            if normalized != normalized_base and ("eod_data" in normalized or "nse_data" in normalized):
-                                self.download_paths[key] = eod_base_path
-                                migrated = True
-                                logging.info(f"Migrated path for {key} to EOD_Data root: {eod_base_path}")
 
                     # Support both old single time and new multiple times
                     if 'scheduled_times' in config:

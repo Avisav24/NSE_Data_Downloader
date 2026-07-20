@@ -469,7 +469,22 @@ class NSEDownloader:
                 self.prepare_option_chain_page(driver)
 
             wait = WebDriverWait(driver, 30)
-            download_button = wait.until(EC.element_to_be_clickable((By.ID, click_selector)))
+            if source_name == 'option_chain':
+                # NSE renamed this control in July 2026; support both page variants.
+                button_ids = [click_selector, 'download_csv']
+                download_button = wait.until(lambda d: next((
+                    button for button_id in button_ids
+                    for button in d.find_elements(By.ID, button_id)
+                    if button.is_displayed() and button.is_enabled()
+                ), False))
+                driver.execute_script(
+                    "arguments[0].setAttribute('download', arguments[1]);",
+                    download_button,
+                    f"Option_Chain_{datetime.now().strftime('%d%m%y')}.csv"
+                )
+            else:
+                download_button = wait.until(EC.element_to_be_clickable((By.ID, click_selector)))
+
             driver.execute_script("arguments[0].click();", download_button)
 
             if self.gui:
@@ -478,10 +493,6 @@ class NSEDownloader:
             timeout = 60
             poll_interval = 0.5
             elapsed = 0.0
-
-            if source_name == 'option_chain':
-                # Option chain is a data-URI download; keep the browser flow but hint a filename.
-                driver.execute_script("arguments[0].setAttribute('download', arguments[1]);", download_button, f"Option_Chain_{datetime.now().strftime('%d%m%y')}.csv")
 
             while elapsed < timeout:
                 candidate_files = []
@@ -870,7 +881,7 @@ var timer = setInterval(function() {
                     'option_chain',
                     option_chain_url,
                     self.download_paths['option_chain'],
-                    'download_csv',
+                    'downloadOCTable',
                     progress_offset=80,
                     progress_bar='main'
                 )

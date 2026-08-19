@@ -17,7 +17,7 @@ A powerful desktop application to automatically download **NIFTY 500**, **Market
 
 ### 🎯 **Ready-to-Use Windows Executable**
 
-**Latest Version: v5.4** | **Size: ~22 MB** | **Platform: Windows 10/11**
+**Latest Version: v5.5** | **Size: ~22 MB** | **Platform: Windows 10/11**
 
 <p>
       <a href="https://github.com/Avisav24/NSE_Data_Downloader/raw/main/releases/NSE_Data_Downloader.exe">
@@ -42,6 +42,11 @@ _Or browse the [releases folder](releases/) for all versions_
 ## ✨ What's New
 
 <div align="center">
+
+### 🚀 v5.5 Highlights
+
+- **Multiple OI Spurts Times**: You can now schedule multiple specific times for OI Spurts downloads (e.g. `15:30, 15:45`).
+- **Clean Option Chain Naming**: If the spot price cannot be determined (is 0), the filename now cleanly omits the `spot_0_at_` portion (e.g., `Option_Chain_1530m.csv`).
 
 ### 🚀 v5.4 Highlights
 

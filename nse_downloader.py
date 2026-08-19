@@ -89,6 +89,7 @@ class NSEDownloader:
                               "12:00", "12:30", "13:00", "13:30", "14:00", "14:30", 
                               "15:00", "15:30", "16:00"]
         self.optional_download_time = "21:00"  # Optional files run at 9 PM daily
+        self.oi_spurts_times = ["15:45"]  # Specific times for OI Spurts
         self.is_running = False
         self.auto_mode = False  # Auto mode: scheduler runs 8 AM - 8 PM
         self.weekend_downloads_enabled = False  # Allow downloads on weekends
@@ -139,6 +140,11 @@ class NSEDownloader:
                     # Optional downloads time
                     if 'optional_download_time' in config:
                         self.optional_download_time = config.get('optional_download_time', self.optional_download_time)
+                    if 'oi_spurts_times' in config:
+                        self.oi_spurts_times = config.get('oi_spurts_times', self.oi_spurts_times)
+                    elif 'oi_spurts_time' in config:
+                        val = config.get('oi_spurts_time')
+                        self.oi_spurts_times = [val] if isinstance(val, str) else self.oi_spurts_times
                     # Load auto mode state
                     self.auto_mode = config.get('auto_mode', False)
                     # Load weekend downloads setting
@@ -167,6 +173,7 @@ class NSEDownloader:
                 'download_paths': self.download_paths,
                 'scheduled_times': self.scheduled_times,
                 'optional_download_time': self.optional_download_time,
+                'oi_spurts_times': self.oi_spurts_times,
                 'auto_mode': self.auto_mode,
                 'weekend_downloads_enabled': self.weekend_downloads_enabled,
                 'enabled_downloads': self.enabled_downloads
@@ -866,7 +873,7 @@ var timer = setInterval(function() {
                 print("  ⚠️ NIFTY 50 row not found in MarketIndices CSV — spot will be 0")
 
             success_option_chain = False
-            if mode in ['all', 'defaults']:
+            if mode in ['all', 'defaults', 'option_chain']:
                 logging.info("=" * 50)
                 logging.info("DIRECT DOWNLOAD: OPTION CHAIN")
                 logging.info("=" * 50)
@@ -888,9 +895,12 @@ var timer = setInterval(function() {
             
             # Process direct downloads
             direct_download_results = {}
-            if mode in ['all', 'optionals'] and hasattr(self, 'direct_urls'):
+            if mode in ['all', 'optionals', 'oi_spurts'] and hasattr(self, 'direct_urls'):
                 # Filter only enabled downloads
-                enabled_keys = [k for k in self.direct_urls.keys() if k in self.enabled_downloads]
+                if mode == 'oi_spurts':
+                    enabled_keys = ['oi_spurts'] if 'oi_spurts' in self.enabled_downloads else []
+                else:
+                    enabled_keys = [k for k in self.direct_urls.keys() if k in self.enabled_downloads]
                 total_direct = len(enabled_keys)
                 
                 if total_direct > 0:
@@ -919,16 +929,16 @@ var timer = setInterval(function() {
             
             # Update progress: Downloads initiated
             if self.gui:
-                if mode in ['all', 'defaults']:
+                if mode in ['all', 'defaults', 'option_chain']:
                     self.gui.update_progress(90, "Verifying downloaded files...", bar="main")
-                if mode in ['all', 'optionals']:
+                if mode in ['all', 'optionals', 'oi_spurts']:
                     self.gui.update_progress(95, "Verifying optional files...", bar="optional")
             
             # Rename both downloaded files
             renamed_files = []
             failed_downloads = []
             
-            if mode in ['all', 'defaults']:
+            if mode in ['all', 'defaults', 'option_chain']:
                 success_msg = []
                 if success_nifty50:
                     success_msg.append("NIFTY 50")
@@ -943,56 +953,63 @@ var timer = setInterval(function() {
                     msg = f"Successfully downloaded: {', '.join(success_msg)}"
                     logging.info(msg)
                     if self.gui:
-                        self.gui.update_progress(100, "Defaults completed!", bar="main")
+                        self.gui.update_progress(100, "Completed!", bar="main")
                 else:
                     if self.gui:
-                        self.gui.update_progress(100, "Defaults completed (with errors)", bar="main")
+                        self.gui.update_progress(100, "Completed (with errors)", bar="main")
 
-                if success_nifty50:
-                    preferred_file = success_nifty50 if isinstance(success_nifty50, str) else None
-                    renamed = self.rename_downloaded_file('nifty50', self.download_paths['nifty50'], skip_stability_check=True, progress_start=76, progress_end=84, progress_bar="main", download_start_time=download_start_time, preferred_file=preferred_file)
-                    if renamed:
-                        renamed_files.append(renamed)
+                if mode in ['all', 'defaults']:
+                    if success_nifty50:
+                        preferred_file = success_nifty50 if isinstance(success_nifty50, str) else None
+                        renamed = self.rename_downloaded_file('nifty50', self.download_paths['nifty50'], skip_stability_check=True, progress_start=76, progress_end=84, progress_bar="main", download_start_time=download_start_time, preferred_file=preferred_file)
+                        if renamed:
+                            renamed_files.append(renamed)
+                        else:
+                            failed_downloads.append("NIFTY 50")
                     else:
                         failed_downloads.append("NIFTY 50")
-                
-                if success_nifty500:
-                    # Update progress: Processing NIFTY 500 file
-                    preferred_file = success_nifty500 if isinstance(success_nifty500, str) else None
-                    renamed = self.rename_downloaded_file('nifty500', self.download_paths['nifty500'], skip_stability_check=True, progress_start=84, progress_end=92, progress_bar="main", download_start_time=download_start_time, preferred_file=preferred_file)
-                    if renamed:
-                        renamed_files.append(renamed)
+                    
+                    if success_nifty500:
+                        # Update progress: Processing NIFTY 500 file
+                        preferred_file = success_nifty500 if isinstance(success_nifty500, str) else None
+                        renamed = self.rename_downloaded_file('nifty500', self.download_paths['nifty500'], skip_stability_check=True, progress_start=84, progress_end=92, progress_bar="main", download_start_time=download_start_time, preferred_file=preferred_file)
+                        if renamed:
+                            renamed_files.append(renamed)
+                        else:
+                            failed_downloads.append("NIFTY 500")
                     else:
                         failed_downloads.append("NIFTY 500")
-                else:
-                    failed_downloads.append("NIFTY 500")
-            
-                if success_market:
-                    # Update progress: Processing Market Indices file
-                    preferred_file = success_market if isinstance(success_market, str) else None
-                    renamed = self.rename_downloaded_file('market_indices', self.download_paths['market_indices'], skip_stability_check=True, progress_start=88, progress_end=100, progress_bar="main", download_start_time=download_start_time, preferred_file=preferred_file)
-                    if renamed:
-                        renamed_files.append(renamed)
+                
+                    if success_market:
+                        # Update progress: Processing Market Indices file
+                        preferred_file = success_market if isinstance(success_market, str) else None
+                        renamed = self.rename_downloaded_file('market_indices', self.download_paths['market_indices'], skip_stability_check=True, progress_start=88, progress_end=100, progress_bar="main", download_start_time=download_start_time, preferred_file=preferred_file)
+                        if renamed:
+                            renamed_files.append(renamed)
+                        else:
+                            failed_downloads.append("Market Indices")
                     else:
                         failed_downloads.append("Market Indices")
-                else:
-                    failed_downloads.append("Market Indices")
 
-                if success_option_chain:
-                    # Update progress: Processing Option Chain file
-                    preferred_file = success_option_chain if isinstance(success_option_chain, str) else None
-                    renamed = self.rename_downloaded_file('option_chain', self.download_paths['option_chain'], skip_stability_check=True, progress_start=92, progress_end=100, progress_bar="main", download_start_time=download_start_time, preferred_file=preferred_file)
-                    if renamed:
-                        renamed_files.append(renamed)
+                if mode in ['all', 'defaults', 'option_chain']:
+                    if success_option_chain:
+                        # Update progress: Processing Option Chain file
+                        preferred_file = success_option_chain if isinstance(success_option_chain, str) else None
+                        renamed = self.rename_downloaded_file('option_chain', self.download_paths['option_chain'], skip_stability_check=True, progress_start=92, progress_end=100, progress_bar="main", download_start_time=download_start_time, preferred_file=preferred_file)
+                        if renamed:
+                            renamed_files.append(renamed)
+                        else:
+                            failed_downloads.append("Option Chain")
                     else:
                         failed_downloads.append("Option Chain")
-                else:
-                    failed_downloads.append("Option Chain")
             
             # Rename optional downloads
-            if hasattr(self, 'direct_urls') and mode in ['all', 'optionals']:
+            if hasattr(self, 'direct_urls') and mode in ['all', 'optionals', 'oi_spurts']:
                 # Check which ones were supposed to be downloaded
-                enabled_keys = [k for k in self.direct_urls.keys() if k in self.enabled_downloads]
+                if mode == 'oi_spurts':
+                    enabled_keys = ['oi_spurts'] if 'oi_spurts' in self.enabled_downloads else []
+                else:
+                    enabled_keys = [k for k in self.direct_urls.keys() if k in self.enabled_downloads]
                 total_enabled = len(enabled_keys)
                 
                 for idx, key in enumerate(enabled_keys):
@@ -1032,9 +1049,9 @@ var timer = setInterval(function() {
             
             # Update progress: Finalizing
             if self.gui:
-                if mode in ['all', 'defaults']:
+                if mode in ['all', 'defaults', 'option_chain']:
                     self.gui.update_progress(98, "Finalizing downloads...", bar="main")
-                if mode in ['all', 'optionals']:
+                if mode in ['all', 'optionals', 'oi_spurts']:
                     self.gui.update_progress(100, "Complete!", bar="optional")
             
             # Update progress: Complete
@@ -1300,7 +1317,10 @@ var timer = setInterval(function() {
                 new_filename = f"{prefix}_{date_str}-{time_str}{extension}"
             elif source_name == 'option_chain':
                 spot_val = getattr(self, 'current_spot_price', '0')
-                new_filename = f"{original_base}_spot_{spot_val}_at_{now.strftime('%H%M')}m{extension}"
+                if spot_val == '0':
+                    new_filename = f"{original_base}_{now.strftime('%H%M')}m{extension}"
+                else:
+                    new_filename = f"{original_base}_spot_{spot_val}_at_{now.strftime('%H%M')}m{extension}"
             else:
                 # Optional files get only date
                 new_filename = f"{prefix}_{date_str}{extension}"
@@ -1313,7 +1333,10 @@ var timer = setInterval(function() {
                     new_filename = f"{prefix}_{date_str}-{time_str}_{counter}{extension}"
                 elif source_name == 'option_chain':
                     spot_val = getattr(self, 'current_spot_price', '0')
-                    new_filename = f"{original_base}_spot_{spot_val}_at_{now.strftime('%H%M')}m_{counter}{extension}"
+                    if spot_val == '0':
+                        new_filename = f"{original_base}_{now.strftime('%H%M')}m_{counter}{extension}"
+                    else:
+                        new_filename = f"{original_base}_spot_{spot_val}_at_{now.strftime('%H%M')}m_{counter}{extension}"
                 else:
                     new_filename = f"{prefix}_{date_str}_{counter}{extension}"
                 new_filepath = os.path.join(abs_download_path, new_filename)
@@ -1416,10 +1439,35 @@ var timer = setInterval(function() {
         times_display = ", ".join(self.scheduled_times)
         print(f"Download scheduled for {times_display} daily (Monday-Friday only)")
 
-        # Schedule optional downloads for daily 9 PM run
         schedule.every().day.at(self.optional_download_time).do(self.scheduled_optionals_wrapper)
         logging.info(f"Optional downloads scheduled for {self.optional_download_time} daily")
         print(f"Optional downloads scheduled for {self.optional_download_time} daily")
+
+        for t in self.oi_spurts_times:
+            schedule.every().day.at(t).do(self.scheduled_oi_spurts_wrapper)
+            logging.info(f"OI Spurts download scheduled for {t} daily")
+        
+        times_display_oi = ", ".join(self.oi_spurts_times)
+        print(f"OI Spurts download scheduled for {times_display_oi} daily")
+    
+    def scheduled_oi_spurts_wrapper(self):
+        """Run OI Spurts download at its specific time"""
+        from datetime import datetime
+        
+        # Check for weekend
+        current_day = datetime.now().weekday()
+        if current_day in [5, 6] and not self.weekend_downloads_enabled:
+            day_name = "Saturday" if current_day == 5 else "Sunday"
+            logging.info(f"It's {day_name} - Skipping OI Spurts download (weekend downloads disabled)")
+            return
+        
+        if 'oi_spurts' not in self.enabled_downloads:
+            logging.info("OI Spurts not enabled; skipping scheduled run")
+            return
+
+        logging.info("Starting scheduled OI Spurts download")
+        self.target_date = datetime.now()
+        self.download_data(mode='oi_spurts')
     
     def run_scheduler(self):
         """Run the scheduler loop"""
@@ -1607,6 +1655,11 @@ class DownloaderGUI:
         
         ctk.CTkLabel(time_inner_frame, text="Example: 09:30, 12:00, 15:30", font=("Helvetica", 11), text_color="gray").pack(anchor=tk.W)
 
+        ctk.CTkLabel(time_inner_frame, text="OI Spurts Times (HH:MM, 24-hour, comma separated):", font=("Helvetica", 12)).pack(anchor=tk.W, pady=(10,0))
+        self.oi_spurts_times_var = tk.StringVar(value=", ".join(self.downloader.oi_spurts_times))
+        oi_time_entry = ctk.CTkEntry(time_inner_frame, textvariable=self.oi_spurts_times_var, width=400)
+        oi_time_entry.pack(anchor=tk.W, pady=5)
+
         # Control Buttons
         button_frame = ctk.CTkFrame(self.scrollable_dashboard, fg_color="transparent")
         button_frame.pack(pady=5)
@@ -1638,6 +1691,15 @@ class DownloaderGUI:
             font=("Helvetica", 12, "bold")
         )
         self.manual_btn.pack(side=tk.LEFT, padx=10)
+
+        self.option_chain_btn = ctk.CTkButton(
+            button_frame,
+            text="Download Option Chain Now",
+            command=self.download_option_chain_now,
+            width=200, height=30, corner_radius=50,
+            font=("Helvetica", 12, "bold")
+        )
+        self.option_chain_btn.pack(side=tk.LEFT, padx=10)
         
         # Progress Bar Section
         progress_frame = ctk.CTkFrame(self.scrollable_dashboard)
@@ -1786,6 +1848,8 @@ class DownloaderGUI:
         self.start_btn.configure(state="disabled")
         self.stop_btn.configure(state="disabled")
         self.manual_btn.configure(state="disabled")
+        if hasattr(self, 'option_chain_btn'):
+            self.option_chain_btn.configure(state="disabled")
         
         threading.Thread(target=self.run_download_thread, args=('defaults',), daemon=True).start()
         
@@ -1798,8 +1862,24 @@ class DownloaderGUI:
         self.start_btn.configure(state="disabled")
         self.stop_btn.configure(state="disabled")
         self.manual_btn.configure(state="disabled")
+        if hasattr(self, 'option_chain_btn'):
+            self.option_chain_btn.configure(state="disabled")
         
         threading.Thread(target=self.run_download_thread, args=('optionals',), daemon=True).start()
+
+    def download_option_chain_now(self):
+        date = self.get_selected_date()
+        if not date:
+            return
+            
+        self.downloader.target_date = date
+        self.start_btn.configure(state="disabled")
+        self.stop_btn.configure(state="disabled")
+        self.manual_btn.configure(state="disabled")
+        if hasattr(self, 'option_chain_btn'):
+            self.option_chain_btn.configure(state="disabled")
+        
+        threading.Thread(target=self.run_download_thread, args=('option_chain',), daemon=True).start()
         
     def update_progress(self, value, message="", bar="main"):
         display_text = f"[{value}%] {message}" if message else f"{value}%"
@@ -1824,11 +1904,15 @@ class DownloaderGUI:
             self.stop_btn.configure(state="disabled")
             if not getattr(self.downloader, 'auto_mode', False):
                 self.manual_btn.configure(state="normal")
+                if hasattr(self, 'option_chain_btn'):
+                    self.option_chain_btn.configure(state="normal")
         else:
             self.stop_btn.configure(state="normal")
             self.start_btn.configure(state="disabled")
             if not getattr(self.downloader, 'auto_mode', False):
                 self.manual_btn.configure(state="normal")
+                if hasattr(self, 'option_chain_btn'):
+                    self.option_chain_btn.configure(state="normal")
             
     def validate_time(self, time_str):
         try:
@@ -1847,7 +1931,13 @@ class DownloaderGUI:
             messagebox.showerror("Error", "Invalid time format. Please use HH:MM (24-hour)")
             return
             
+        oi_times_str = self.oi_spurts_times_var.get()
+        if not self.validate_times(oi_times_str):
+            messagebox.showerror("Error", "Invalid OI Spurts time format. Please use HH:MM (24-hour)")
+            return
+
         self.downloader.scheduled_times = [t.strip() for t in times_str.split(",")]
+        self.downloader.oi_spurts_times = [t.strip() for t in oi_times_str.split(",")]
         self.downloader.save_config()
         self.downloader.schedule_download()
         

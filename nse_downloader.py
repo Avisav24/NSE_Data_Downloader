@@ -90,7 +90,7 @@ class NSEDownloader:
                               "15:00", "15:30", "16:00"]
         self.optional_download_time = "21:00"  # Optional files run at 9 PM daily
         self.is_running = False
-        self.auto_mode = False  # Auto mode: scheduler runs 8 AM - 8 PM
+        self.auto_mode = False  # Auto mode: scheduler runs 8 AM - 10 PM
         self.weekend_downloads_enabled = False  # Allow downloads on weekends
         self.last_weekend_notification = None  # Track last weekend notification date
         self.enabled_downloads = list(self.direct_urls.keys()) # List of enabled optional downloads
@@ -1441,34 +1441,65 @@ var timer = setInterval(function() {
             logging.info(f"It's {day_name} - Skipping optional downloads (weekend downloads disabled)")
             return
         
-        if not self.enabled_downloads:
-            logging.info("No optional downloads enabled; skipping optional schedule run")
-            return
-
-        logging.info("Starting scheduled optional downloads")
+        logging.info("Starting scheduled 9 PM downloads (defaults + optionals)")
         self.target_date = datetime.now()
-        self.download_data(mode='optionals')
+        self.download_data(mode='all')
 
     def schedule_download(self):
         """Schedule the download job for multiple times"""
         schedule.clear()
-        for time_str in self.scheduled_times:
-            # Use wrapper function that checks for weekends
-            schedule.every().day.at(time_str).do(self.scheduled_download_wrapper)
-            logging.info(f"Download scheduled for {time_str} daily (Mon-Fri only)")
         
-        times_display = ", ".join(self.scheduled_times)
+        def format_time(t_str):
+            try:
+                parts = str(t_str).split(':')
+                if len(parts) >= 2:
+                    return f"{int(parts[0]):02d}:{int(parts[1]):02d}" + (f":{int(parts[2]):02d}" if len(parts) == 3 else "")
+            except Exception:
+                pass
+            return str(t_str)
+
+        for time_str in self.scheduled_times:
+            fmt_time = format_time(time_str)
+            # Use wrapper function that checks for weekends
+            schedule.every().day.at(fmt_time).do(self.scheduled_download_wrapper)
+            logging.info(f"Download scheduled for {fmt_time} daily (Mon-Fri only)")
+        
+        times_display = ", ".join([format_time(t) for t in self.scheduled_times])
         print(f"Download scheduled for {times_display} daily (Monday-Friday only)")
 
-        schedule.every().day.at(self.optional_download_time).do(self.scheduled_optionals_wrapper)
-        logging.info(f"Optional downloads scheduled for {self.optional_download_time} daily")
-        print(f"Optional downloads scheduled for {self.optional_download_time} daily")
+        # Optionals are handled by permanent background thread
 
     def run_scheduler(self):
         """Run the scheduler loop"""
         self.is_running = True
         while self.is_running:
             schedule.run_pending()
+            time.sleep(1)
+
+    def run_permanent_optional_scheduler(self):
+        """Permanent scheduler for optional downloads at 9 PM"""
+        import schedule as opt_schedule_lib
+        opt_scheduler = opt_schedule_lib.Scheduler()
+        
+        def format_time(t_str):
+            try:
+                parts = str(t_str).split(':')
+                if len(parts) >= 2:
+                    return f"{int(parts[0]):02d}:{int(parts[1]):02d}" + (f":{int(parts[2]):02d}" if len(parts) == 3 else "")
+            except Exception:
+                pass
+            return str(t_str)
+
+        opt_time = format_time(self.optional_download_time)
+        opt_scheduler.every().day.at(opt_time).do(self.scheduled_optionals_wrapper)
+        logging.info(f"Permanent optional downloads scheduled for {opt_time} daily")
+        print(f"Permanent optional downloads scheduled for {opt_time} daily")
+        
+        while True:
+            try:
+                opt_scheduler.run_pending()
+            except Exception as e:
+                logging.error(f"Error in permanent optional scheduler: {e}")
             time.sleep(1)
 
 
@@ -1485,6 +1516,10 @@ class DownloaderGUI:
         
         self.downloader = NSEDownloader(gui=self)
         self.scheduler_thread = None
+        
+        # Start permanent optional scheduler thread
+        self.opt_scheduler_thread = threading.Thread(target=self.downloader.run_permanent_optional_scheduler, daemon=True)
+        self.opt_scheduler_thread.start()
         
         # Initialize selection variables
         self.selected_downloads = {}
@@ -1627,7 +1662,7 @@ class DownloaderGUI:
         self.auto_mode_var = tk.BooleanVar(value=self.downloader.auto_mode)
         self.auto_mode_check = ctk.CTkCheckBox(
             time_inner_frame,
-            text="Auto Mode (8 AM - 8 PM, auto-start scheduler)",
+            text="Auto Mode (8 AM - 10 PM, auto-start scheduler)",
             variable=self.auto_mode_var,
             command=self.toggle_auto_mode
         )
@@ -1945,14 +1980,14 @@ class DownloaderGUI:
         now = datetime.now()
         current_time = now.time()
         start_time = datetime.strptime("08:00", "%H:%M").time()
-        end_time = datetime.strptime("20:00", "%H:%M").time()
+        end_time = datetime.strptime("22:00", "%H:%M").time()
 
         if start_time <= current_time <= end_time:
             if not self.downloader.is_running:
                 self.start_scheduler()
                 self.update_progress(0, "[Auto Mode] Scheduler started — waiting for next download")
         else:
-            self.update_progress(0, "[Auto Mode] Outside active hours (8 AM - 8 PM)")
+            self.update_progress(0, "[Auto Mode] Outside active hours (8 AM - 10 PM)")
 
 
 def main():

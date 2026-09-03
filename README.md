@@ -107,7 +107,7 @@ _Or browse the [releases folder](releases/) for all versions_
 **UPDATED!** Set it and forget it!
 
 ✅ **Multiple Schedule Times** (comma-separated)
-✅ Auto-start scheduler (8 AM - 8 PM)  
+✅ Auto-start scheduler (8 AM - 10 PM)  
 ✅ Handles multiple download sources  
 ✅ State persists across restarts  
 ✅ Perfect for Windows startup
@@ -219,7 +219,7 @@ The application now fetches the following reports automatically:
 | 📊 **Real-time Progress**       | Feedback on which report is currently downloading        |
 | ⏰ **Multiple Schedule Times**  | Set unlimited times (e.g., `09:30, 15:30`)               |
 | 🎯 **Manual Download**          | Instant downloads with a single click (works any day)    |
-| 🤖 **Auto Mode**                | Auto-start scheduler during business hours (8 AM - 8 PM) |
+| 🤖 **Auto Mode**                | Auto-start scheduler during business hours (8 AM - 10 PM) |
 | Feature                         | Description                                              |
 | ---------                       | -------------                                            |
 | 📥 **Multi-Source Downloads**   | Download from 15+ NSE endpoints simultaneously           |
@@ -229,7 +229,7 @@ The application now fetches the following reports automatically:
 | 📊 **Real-time Progress**       | Feedback on which report is currently downloading        |
 | ⏰ **Multiple Schedule Times**  | Set unlimited times (e.g., `09:30, 15:30`)               |
 | 🎯 **Manual Download**          | Instant downloads with a single click (works any day)    |
-| 🤖 **Auto Mode**                | Auto-start scheduler during business hours (8 AM - 8 PM) |
+| 🤖 **Auto Mode**                | Auto-start scheduler during business hours (8 AM - 10 PM) |
 
 <div align="center">
 
